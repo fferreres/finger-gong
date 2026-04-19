@@ -1126,9 +1126,12 @@ function initAudio() {
   analyser.connect(audioCtx.destination);
 }
 function resumeAudio() {
-  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume().then(() => { buildModalBank(); });
+  }
 }
 document.addEventListener('touchstart', () => { initAudio(); resumeAudio(); buildModalBank(); }, { once: false });
+document.addEventListener('click', () => { initAudio(); resumeAudio(); buildModalBank(); }, { once: false });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) resumeAudio(); });
 
 let modalBank = null;
@@ -2101,7 +2104,7 @@ function handleStrikeAt(p) {
 
 function beginRub(e, p) {
   if (!p.inside) return;
-  buildModalBank();
+  initAudio(); resumeAudio(); buildModalBank();
   interactionMode = 'rub';
   rubActive = true;
   rubState.x = rubState.prevX = p.px;
