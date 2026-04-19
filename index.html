@@ -1909,7 +1909,9 @@ gongCanvas.addEventListener('pointermove', (e) => {
     const rect = gongCanvas.getBoundingClientRect();
     const dx = e.clientX - rect.left - g.px;
     const dy = e.clientY - rect.top - g.py;
-    if (Math.sqrt(dx * dx + dy * dy) > STRIKE_DIST) {
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const held = performance.now() - g.t;
+    if (dist > STRIKE_DIST && held > 120) {
       beginRub(e, g.p);
       rubPointerId = e.pointerId;
       gestureDowns.delete(e.pointerId);
