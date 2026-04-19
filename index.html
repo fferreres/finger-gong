@@ -903,18 +903,18 @@ function initAudio() {
   softClip.oversample = '2x';
 
   const comp = audioCtx.createDynamicsCompressor();
-  comp.threshold.value = -14;
-  comp.knee.value = 10;
-  comp.ratio.value = 4;
-  comp.attack.value = 0.003;
-  comp.release.value = 0.22;
+  comp.threshold.value = -24;
+  comp.knee.value = 12;
+  comp.ratio.value = 6;
+  comp.attack.value = 0.002;
+  comp.release.value = 0.18;
 
   const limiter = audioCtx.createDynamicsCompressor();
-  limiter.threshold.value = -1.5;
+  limiter.threshold.value = -2;
   limiter.knee.value = 0;
   limiter.ratio.value = 20;
-  limiter.attack.value = 0.001;
-  limiter.release.value = 0.08;
+  limiter.attack.value = 0.0005;
+  limiter.release.value = 0.06;
 
   const delay = audioCtx.createDelay(0.5);
   delay.delayTime.value = 0.08;
@@ -1146,7 +1146,8 @@ function strike(strikeR, strikeTheta) {
     const locWeight = Math.max(0.18, Math.abs(shape));
     const mWeight = malletPartialWeight(i, P.length);
     const deposit = p.amp * locWeight * mWeight * me * STRIKE_SCALE;
-    r.energy = Math.min(ENERGY_CAP, r.energy + deposit);
+    const headroom = 1 / (1 + r.energy * 0.8);
+    r.energy = Math.min(ENERGY_CAP, r.energy + deposit * headroom);
   });
 
   const nLen = Math.floor(audioCtx.sampleRate * 0.15);
@@ -1160,7 +1161,9 @@ function strike(strikeR, strikeTheta) {
   nf.frequency.value = malletNoiseFreq() + strikeR * 1500;
   nf.Q.value = 1.2;
   const ng = audioCtx.createGain();
-  const noiseAmp = (0.06 + strikeR * 0.18) * malletNoiseMult();
+  const totalEnergy = modalBank.resonators.reduce((s, r) => s + r.energy, 0);
+  const noiseScale = 1 / (1 + totalEnergy * 0.3);
+  const noiseAmp = (0.06 + strikeR * 0.18) * malletNoiseMult() * noiseScale;
   ng.gain.setValueAtTime(noiseAmp, now);
   ng.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
   noise.connect(nf); nf.connect(ng); ng.connect(masterGain);
