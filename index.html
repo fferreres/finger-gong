@@ -1963,6 +1963,7 @@ gongCanvas.style.touchAction = 'none';
 
 gongCanvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
+  initAudio(); resumeAudio();
   if (firstInteraction) { firstInteraction = false; hint.classList.add('fade'); }
   const p = pointerToGong(e);
   if (!p.inside) return;
