@@ -2003,6 +2003,7 @@ document.getElementById('pitch-rack').addEventListener('click', (e) => {
   if (!btn) return;
   currentPitchIdx = parseInt(btn.dataset.pitch);
   pitchRatio = PITCH_RATIOS[currentPitchIdx];
+  updatePitchRack();
   retuneModalBank();
 });
 
