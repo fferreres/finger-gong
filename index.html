@@ -1802,7 +1802,8 @@ const rubState = {
   outside: false,
 };
 
-let gestureDown = null;
+const gestureDowns = new Map();
+let rubPointerId = null;
 const STRIKE_TIME = 250;
 const STRIKE_DIST = 10;
 
@@ -1889,46 +1890,57 @@ function endRub() {
   gongCanvas.style.cursor = 'pointer';
 }
 
+gongCanvas.style.touchAction = 'none';
+
 gongCanvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   if (firstInteraction) { firstInteraction = false; hint.classList.add('fade'); }
   const p = pointerToGong(e);
   if (!p.inside) return;
-  gestureDown = { t: performance.now(), px: p.px, py: p.py, p, e };
+  gestureDowns.set(e.pointerId, { t: performance.now(), px: p.px, py: p.py, p, pointerId: e.pointerId });
 });
 
 gongCanvas.addEventListener('pointermove', (e) => {
-  if (!gestureDown && !rubActive) return;
-  if (gestureDown && !rubActive) {
-    const dx = e.clientX - gongCanvas.getBoundingClientRect().left - gestureDown.px;
-    const dy = e.clientY - gongCanvas.getBoundingClientRect().top - gestureDown.py;
+  const g = gestureDowns.get(e.pointerId);
+  if (g && !rubActive) {
+    const rect = gongCanvas.getBoundingClientRect();
+    const dx = e.clientX - rect.left - g.px;
+    const dy = e.clientY - rect.top - g.py;
     if (Math.sqrt(dx * dx + dy * dy) > STRIKE_DIST) {
-      beginRub(e, gestureDown.p);
-      gestureDown = null;
+      beginRub(e, g.p);
+      rubPointerId = e.pointerId;
+      gestureDowns.delete(e.pointerId);
     }
   }
-  if (rubActive) moveRub(e);
+  if (rubActive && e.pointerId === rubPointerId) moveRub(e);
 });
 
 function handlePointerUp(e) {
-  if (gestureDown) {
-    const elapsed = performance.now() - gestureDown.t;
+  const g = gestureDowns.get(e.pointerId);
+  if (g) {
+    const elapsed = performance.now() - g.t;
     if (elapsed < STRIKE_TIME) {
-      handleStrikeAt(gestureDown.p);
+      handleStrikeAt(g.p);
     } else if (!rubActive) {
-      beginRub(e, gestureDown.p);
+      beginRub(e, g.p);
       setTimeout(endRub, 50);
     }
-    gestureDown = null;
+    gestureDowns.delete(e.pointerId);
   }
-  endRub();
+  if (e.pointerId === rubPointerId) {
+    endRub();
+    rubPointerId = null;
+  }
 }
 
 gongCanvas.addEventListener('pointerup', handlePointerUp);
-gongCanvas.addEventListener('pointercancel', () => { gestureDown = null; endRub(); });
-window.addEventListener('pointerup', () => { gestureDown = null; endRub(); });
-gongCanvas.addEventListener('pointerleave', () => {
-  if (rubActive) rubState.outside = true;
+gongCanvas.addEventListener('pointercancel', (e) => {
+  gestureDowns.delete(e.pointerId);
+  if (e.pointerId === rubPointerId) { endRub(); rubPointerId = null; }
+});
+window.addEventListener('pointerup', handlePointerUp);
+gongCanvas.addEventListener('pointerleave', (e) => {
+  if (rubActive && e.pointerId === rubPointerId) rubState.outside = true;
 });
 
 // ============================================================
