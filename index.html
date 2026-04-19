@@ -124,7 +124,7 @@
     color: var(--text);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     font-weight: 300;
-    min-height: 100vh;
+    min-height: 100dvh;
     overflow-x: hidden;
     transition: background-color 0.4s ease, color 0.4s ease;
   }
@@ -570,7 +570,7 @@
     header { margin-bottom: 8px; }
     h1 { font-size: 1.6rem; }
     .skin-toggle { top: auto; bottom: 24px; right: 24px; }
-    body { height: 100vh; display: flex; flex-direction: column; justify-content: center; padding-top: 0; padding-bottom: 0; }
+    body { height: 100dvh; display: flex; flex-direction: column; justify-content: center; padding-top: 0; padding-bottom: 0; }
     .gong-stage { max-width: 88vw; }
     .controls { max-width: 68vw; }
     .instrument-selectors { max-width: 68vw; }
@@ -974,7 +974,11 @@ function initAudio() {
   limiter.connect(analyser);
   analyser.connect(audioCtx.destination);
 }
-function resumeAudio() { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }
+function resumeAudio() {
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+document.addEventListener('touchstart', resumeAudio, { once: false });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) resumeAudio(); });
 
 let modalBank = null;
 
