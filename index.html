@@ -738,7 +738,7 @@
   <header>
     <div class="eyebrow">An Interactive Study</div>
     <h1>The Anatomy of a <em>Gong</em></h1>
-    <p class="subtitle">A gong isn't one sound but hundreds, bouncing inside a metal disc. Shape sets the partials; alloy sets the ring. <em style="font-family:'Cormorant Garamond',serif;color:var(--bronze-light)">Strike</em> for a bloom. <em style="font-family:'Cormorant Garamond',serif;color:var(--bronze-light)">Rub</em> to charge the modes until they sing — and watch their geometry surface.</p>
+    <p class="subtitle">A gong isn't one sound but hundreds, bouncing inside a metal disc. Shape sets the partials; alloy sets the ring. <em style="font-family:'Cormorant Garamond',serif;color:var(--bronze-light)">Tap</em> for a bloom. <em style="font-family:'Cormorant Garamond',serif;color:var(--bronze-light)">Hold and drag</em> to charge the modes until they sing — and watch their geometry surface.</p>
   </header>
 
   <div class="main-layout">
@@ -1173,14 +1173,22 @@ function initAudio() {
   comp.connect(limiter);
   limiter.connect(analyser);
   analyser.connect(audioCtx.destination);
+
+  // iOS audio unlock: play a silent buffer to fully activate the context
+  const unlock = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
+  const src = audioCtx.createBufferSource();
+  src.buffer = unlock;
+  src.connect(audioCtx.destination);
+  src.start();
 }
 function resumeAudio() {
   if (audioCtx && audioCtx.state === 'suspended') {
     audioCtx.resume().then(() => { buildModalBank(); });
   }
 }
-document.addEventListener('touchstart', () => { initAudio(); resumeAudio(); buildModalBank(); }, { once: false });
-document.addEventListener('click', () => { initAudio(); resumeAudio(); buildModalBank(); }, { once: false });
+function unlockAudio() { initAudio(); resumeAudio(); buildModalBank(); }
+document.addEventListener('touchstart', unlockAudio, { once: false });
+document.addEventListener('click', unlockAudio, { once: false });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) resumeAudio(); });
 
 let modalBank = null;
