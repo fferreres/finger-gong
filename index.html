@@ -701,7 +701,7 @@
 </head>
 <body data-skin="hearth">
 
-<button class="zen-btn" id="zen-toggle" title="Zen mode" aria-label="Toggle zen mode">◎</button>
+<button class="zen-btn" id="zen-toggle" title="Zen mode" aria-label="Toggle zen mode">✕</button>
 
 <div class="skin-toggle" role="tablist" aria-label="Skin">
   <button class="skin-btn active" data-skin="hearth"   title="Hearth"   aria-label="Hearth skin"></button>
@@ -729,7 +729,7 @@
           <button class="pitch-pick" data-pitch="4" title="A">A</button>
           <button class="pitch-pick" data-pitch="5" title="C — octave">C'</button>
         </div>
-        <button class="dampen-btn" id="dampen-btn" title="Hold to dampen">✕</button>
+        <button class="dampen-btn" id="dampen-btn" title="Hold to dampen">◎</button>
         <div class="mallet-rack" id="mallet-rack">
           <button class="mallet-pick" data-size="0" data-mallet="0" title="Wooden stick"></button>
           <button class="mallet-pick" data-size="1" data-mallet="1" title="Light felt"></button>
@@ -2251,7 +2251,7 @@ loop();
 document.getElementById('zen-toggle').addEventListener('click', () => {
   const zen = document.body.dataset.zen !== 'true';
   document.body.dataset.zen = zen;
-  document.getElementById('zen-toggle').textContent = zen ? '○' : '◎';
+  document.getElementById('zen-toggle').textContent = zen ? '+' : '✕';
   setTimeout(resizeAll, 50);
 });
 </script>
