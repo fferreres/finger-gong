@@ -756,6 +756,7 @@
             <button class="selector-btn active" data-material="bronze">Bronze</button>
             <button class="selector-btn" data-material="brass">Brass</button>
             <button class="selector-btn" data-material="nickel">Nickel silver</button>
+            <button class="selector-btn" data-material="blission">Blission</button>
           </div>
         </div>
       </div>
@@ -985,6 +986,19 @@ const MATERIALS = {
       rimHigh: [78, 92, 112], rimMid: [38, 48, 62], rimLow: [14, 20, 28],
       bossHigh: [236, 244, 252], bossMid: [184, 202, 222], bossLow: [55, 70, 88],
       halo: [198, 216, 234], haloDeep: [125, 152, 184], ringDark: [30, 40, 55],
+    }
+  },
+  blission: {
+    label: 'Blission',
+    decayMult: 1.25,
+    noiseFreqMult: 0.75,
+    noiseAmpMult: 0.65,
+    waveDamping: 0.9975,
+    palette: {
+      discHigh: [200, 170, 225], discMid: [140, 100, 180], discLow: [75, 45, 110], discEdge: [38, 22, 58],
+      rimHigh: [90, 60, 130], rimMid: [38, 22, 58], rimLow: [16, 10, 26],
+      bossHigh: [220, 195, 245], bossMid: [165, 120, 200], bossLow: [60, 38, 90],
+      halo: [185, 155, 220], haloDeep: [120, 80, 165], ringDark: [35, 20, 52],
     }
   },
 };
