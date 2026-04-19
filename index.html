@@ -765,9 +765,9 @@
         <div class="control">
           <div class="control-label">
             <span class="control-name">Gong</span>
-            <span class="control-value" id="gong-value">36<span class="unit">in</span></span>
+            <span class="control-value" id="gong-value">Medium<span class="unit">34in</span></span>
           </div>
-          <input type="range" id="gong-slider" min="0" max="1" step="0.001" value="0.43">
+          <input type="range" id="gong-slider" min="0" max="2" step="1" value="1">
         </div>
         <div class="control">
           <div class="control-label">
@@ -1006,7 +1006,7 @@ const MATERIALS = {
 // ============================================================
 // STATE
 // ============================================================
-let gongNorm = 0.43;
+let gongSizeIdx = 1;
 let pitchRatio = 1.5;
 let malletNorm = 0.5;
 let interactionMode = 'strike';
@@ -1017,10 +1017,16 @@ function shape() { return SHAPES[currentShape]; }
 function material() { return MATERIALS[currentMaterial]; }
 function partials() { return shape().partials; }
 
-function gongDiameterIn()   { return 18 + gongNorm * 42; }
-function gongVisualScale()  { return 0.68 + gongNorm * 0.38; }
-function gongFundamental()  { return 175 * Math.pow(50 / 175, gongNorm) * shape().pitchMult * pitchRatio; }
-function gongDecayMult()    { return (0.6 + gongNorm * 1.1) * material().decayMult; }
+const GONG_SIZES = [
+  { label: 'Small',  inches: 22, baseFreq: 130.81, decay: 0.7, scale: 0.72 },
+  { label: 'Medium', inches: 34, baseFreq: 65.41,  decay: 1.0, scale: 0.88 },
+  { label: 'Large',  inches: 50, baseFreq: 32.70,  decay: 1.4, scale: 1.06 },
+];
+function gongSize_()        { return GONG_SIZES[gongSizeIdx]; }
+function gongDiameterIn()   { return gongSize_().inches; }
+function gongVisualScale()  { return gongSize_().scale; }
+function gongFundamental()  { return gongSize_().baseFreq * shape().pitchMult * pitchRatio; }
+function gongDecayMult()    { return gongSize_().decay * material().decayMult; }
 
 function malletContactRadius() { return 0.015 + malletNorm * 0.115; }
 function malletSigma()      { return malletContactRadius() * gridR; }
@@ -1915,8 +1921,8 @@ function malletLabel(v) {
   return MALLET_LABELS[idx];
 }
 function updateGongDisplay() {
-  const d = Math.round(gongDiameterIn());
-  gongValue.innerHTML = `${d}<span class="unit">in</span>`;
+  const s = gongSize_();
+  gongValue.innerHTML = `${s.label}<span class="unit">${s.inches}in</span>`;
 }
 function updateMalletDisplay() {
   malletValue.textContent = malletLabel(malletNorm);
@@ -1926,7 +1932,7 @@ function updateMalletDisplay() {
   });
 }
 gongSlider.addEventListener('input', (e) => {
-  gongNorm = parseFloat(e.target.value);
+  gongSizeIdx = parseInt(e.target.value);
   updateGongDisplay();
   retuneModalBank();
 });
