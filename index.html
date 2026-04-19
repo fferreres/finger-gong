@@ -767,7 +767,7 @@
             <span class="control-name">Gong</span>
             <span class="control-value" id="gong-value">Medium<span class="unit">34in</span></span>
           </div>
-          <input type="range" id="gong-slider" min="0" max="2" step="1" value="1">
+          <input type="range" id="gong-slider" min="0" max="3" step="1" value="2">
         </div>
         <div class="control">
           <div class="control-label">
@@ -1006,7 +1006,7 @@ const MATERIALS = {
 // ============================================================
 // STATE
 // ============================================================
-let gongSizeIdx = 1;
+let gongSizeIdx = 2;
 let pitchRatio = 1.5;
 let malletNorm = 0.5;
 let interactionMode = 'strike';
@@ -1018,6 +1018,7 @@ function material() { return MATERIALS[currentMaterial]; }
 function partials() { return shape().partials; }
 
 const GONG_SIZES = [
+  { label: 'XS',     inches: 14, baseFreq: 261.63, decay: 0.5, scale: 0.60 },
   { label: 'Small',  inches: 22, baseFreq: 130.81, decay: 0.7, scale: 0.72 },
   { label: 'Medium', inches: 34, baseFreq: 65.41,  decay: 1.0, scale: 0.88 },
   { label: 'Large',  inches: 50, baseFreq: 32.70,  decay: 1.4, scale: 1.06 },
