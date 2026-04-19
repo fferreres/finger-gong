@@ -2028,8 +2028,8 @@ let currentPitchIdx = 3;
 pitchRatio = PITCH_RATIOS[3];
 
 function updatePitchRack() {
-  document.querySelectorAll('.pitch-pick').forEach((btn, i) => {
-    btn.classList.toggle('active', i === currentPitchIdx);
+  document.querySelectorAll('.pitch-pick').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.pitch) === currentPitchIdx);
   });
 }
 document.getElementById('pitch-rack').addEventListener('click', (e) => {
