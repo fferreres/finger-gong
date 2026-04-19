@@ -2,14 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Finger Gong</title>
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Finger Gong">
-<link rel="apple-touch-icon" href="icon.png">
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0d0a07">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Anatomy of a Gong</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
@@ -124,7 +118,7 @@
     color: var(--text);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     font-weight: 300;
-    min-height: 100dvh;
+    min-height: 100vh;
     overflow-x: hidden;
     transition: background-color 0.4s ease, color 0.4s ease;
   }
@@ -225,6 +219,40 @@
     flex-direction: column;
     align-items: center;
   }
+
+  .mode-toggle {
+    display: inline-flex;
+    background: var(--control-bg);
+    border: 1px solid var(--bg-panel-border);
+    padding: 3px;
+    margin-bottom: 20px;
+    border-radius: 2px;
+    gap: 2px;
+    transition: background 0.4s ease, border-color 0.4s ease;
+  }
+
+  .mode-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-style: italic;
+    font-size: 16px;
+    letter-spacing: 0.01em;
+    padding: 7px 28px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border-radius: 2px;
+    min-width: 110px;
+  }
+
+  .mode-btn.active {
+    background: linear-gradient(180deg, var(--btn-top), var(--btn-bot));
+    color: var(--gold);
+    box-shadow: 0 0 14px var(--btn-glow), inset 0 1px 0 var(--btn-inset);
+  }
+  .mode-btn:hover:not(.active) { color: var(--text); }
+  .mode-btn:focus { outline: none; }
 
   .gong-stage {
     position: relative;
@@ -485,108 +513,23 @@
 
   footer span { margin: 0 14px; }
 
-  .zen-btn { display: none; }
-
-  @media (orientation: landscape) {
-    body { padding: 8px 24px env(safe-area-inset-bottom, 8px); }
-    header { margin-bottom: 6px; }
-    h1 { font-size: clamp(1.4rem, 3vw, 2.5rem); }
-    .eyebrow { margin-bottom: 6px; }
-    .subtitle { font-size: 12px; margin-bottom: 0; }
-    .gong-stage { max-width: min(520px, 38vh); }
-    .controls { max-width: min(460px, 38vh); margin-top: 6px; gap: 8px 20px; }
-    .instrument-selectors { max-width: min(460px, 38vh); margin-top: 6px; gap: 6px; }
-    .viz-panel { padding: 10px 16px 10px; }
-    .viz-canvas-wrap { height: 90px; }
-    .viz-canvas-wrap.square { height: 150px; }
-    .viz-header { margin-bottom: 6px; }
-    .viz-caption { font-size: 10.5px; }
-    .main-layout { gap: 24px; }
-    .hint { margin-top: 8px; }
-    footer { padding: 8px 0; margin-top: 12px; }
-  }
-
-  @media (max-width: 1100px) {
+  @media (max-width: 920px) {
     body { padding: 24px 14px 48px; }
     .main-layout { grid-template-columns: 1fr; gap: 24px; }
-    .gong-column { align-items: center; }
-    .viz-column { max-width: 520px; width: 100%; margin: 0 auto; }
+    .gong-stage { max-width: 360px; }
+    .controls { max-width: 360px; gap: 22px; }
+    .instrument-selectors { max-width: 360px; }
+    .selector-label { flex: 0 0 46px; font-size: 9.5px; }
+    .selector-btn { font-size: 13px; padding: 6px 2px; }
     header { margin-bottom: 24px; }
     h1 { font-size: 1.9rem; }
     .subtitle { font-size: 12px; }
     .skin-toggle { top: 14px; right: 14px; padding: 5px 6px; gap: 6px; }
     .skin-btn { width: 16px; height: 16px; }
   }
-
-  @media (max-width: 600px) {
-    .gong-stage { max-width: 360px; }
-    .controls { max-width: 360px; gap: 22px; }
-    .instrument-selectors { max-width: 360px; }
-    .selector-label { flex: 0 0 46px; font-size: 9.5px; }
-    .selector-btn { font-size: 13px; padding: 6px 2px; }
-  }
-
-  @media (orientation: portrait) and (max-width: 1100px) {
-    .viz-column { display: none; }
-    .eyebrow { display: none; }
-    .subtitle { display: none; }
-    footer { display: none; }
-    .hint { display: none; }
-    header { margin-bottom: 8px; }
-    h1 { font-size: 1.6rem; }
-    .skin-toggle { top: auto; bottom: 24px; right: 24px; }
-    body { height: 100dvh; display: flex; flex-direction: column; justify-content: center; padding-top: 0; padding-bottom: 0; }
-    .gong-stage { max-width: 85vw; }
-    .controls { max-width: 66vw; gap: 14px 20px; }
-    .instrument-selectors { max-width: 66vw; gap: 8px; }
-    .selector-btn { font-size: 16px; padding: 5px 4px; }
-    .selector-label { font-size: 11px; }
-    .control-name { font-size: 11px; }
-    .control-value { font-size: 16px; }
-    .zen-btn {
-      display: flex;
-      position: fixed;
-      bottom: 24px;
-      left: 24px;
-      z-index: 100;
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      border: 1px solid var(--bg-panel-border);
-      background: var(--control-bg);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      color: var(--text-dim);
-      font-size: 16px;
-      cursor: pointer;
-      align-items: center;
-      justify-content: center;
-      transition: opacity 0.3s ease;
-      padding: 0;
-      line-height: 1;
-    }
-    .zen-btn:hover { color: var(--text); }
-    .zen-btn:focus { outline: none; }
-
-    body[data-zen="true"] header,
-    body[data-zen="true"] .instrument-selectors,
-    body[data-zen="true"] .controls,
-    body[data-zen="true"] .skin-toggle { display: none !important; }
-
-    body[data-zen="true"] .gong-stage { max-width: 95vw; }
-
-    body[data-zen="true"] .zen-btn { opacity: 0.3; }
-    body[data-zen="true"] .zen-btn:hover { opacity: 1; }
-  }
-
-  @supports (-webkit-touch-callout: none) {
-    body { padding-top: env(safe-area-inset-top, 24px); padding-bottom: env(safe-area-inset-bottom, 48px); }
-  }
 </style>
 </head>
 <body data-skin="hearth">
-
-<button class="zen-btn" id="zen-toggle" title="Zen mode" aria-label="Toggle zen mode">◎</button>
 
 <div class="skin-toggle" role="tablist" aria-label="Skin">
   <button class="skin-btn active" data-skin="hearth"   title="Hearth"   aria-label="Hearth skin"></button>
@@ -603,6 +546,11 @@
 
   <div class="main-layout">
     <div class="gong-column">
+
+      <div class="mode-toggle" role="tablist">
+        <button class="mode-btn active" id="mode-strike" data-mode="strike">Strike</button>
+        <button class="mode-btn" id="mode-rub" data-mode="rub">Rub</button>
+      </div>
 
       <div class="gong-stage">
         <canvas id="gong" width="1000" height="1000"></canvas>
@@ -643,14 +591,7 @@
           </div>
           <input type="range" id="mallet-slider" min="0" max="1" step="0.001" value="0.5">
         </div>
-        <div class="control">
-          <div class="control-label">
-            <span class="control-name">Sustain</span>
-            <span class="control-value" id="sustain-value">medium</span>
-          </div>
-          <input type="range" id="sustain-slider" min="0" max="1" step="0.001" value="0.5">
-        </div>
-        <div class="control">
+        <div class="control control-full">
           <div class="control-label">
             <span class="control-name">Volume</span>
             <span class="control-value" id="volume-value">70<span class="unit">%</span></span>
@@ -659,7 +600,7 @@
         </div>
       </div>
 
-      <div class="hint" id="hint">Tap to strike · press and drag to rub</div>
+      <div class="hint" id="hint">Click or tap anywhere on the gong · center for depth, rim for shimmer</div>
     </div>
 
     <div class="viz-column">
@@ -939,11 +880,7 @@ function initAudio() {
   limiter.connect(analyser);
   analyser.connect(audioCtx.destination);
 }
-function resumeAudio() {
-  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-}
-document.addEventListener('touchstart', resumeAudio, { once: false });
-document.addEventListener('visibilitychange', () => { if (!document.hidden) resumeAudio(); });
+function resumeAudio() { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }
 
 let modalBank = null;
 
@@ -1043,8 +980,7 @@ const RUB_DRIVE_SCALE   = 1.4;
 const STRIKE_SCALE      = 1.7;
 const AMP_SCALE         = 0.45;
 const ENERGY_CAP        = 3.5;
-let sustainNorm = 0.5;
-function DECAY_FACTOR_MULT() { return 0.15 + sustainNorm * 0.85; }
+const DECAY_FACTOR_MULT = 0.28;
 
 function updateModalBank(velocity, contactR, dt) {
   if (!modalBank) return;
@@ -1092,7 +1028,7 @@ function updateModalBank(velocity, contactR, dt) {
     const pressureExp = 1.5 - 1.2 * partialPos;
     const pressureWeight = Math.pow(rubState.pressure, pressureExp);
 
-    const tau = Math.max(0.15, p.decay * decayMult * DECAY_FACTOR_MULT());
+    const tau = Math.max(0.15, p.decay * decayMult * DECAY_FACTOR_MULT);
     const decayFactor = Math.exp(-dt / tau);
     const drive = p.amp * velocity * coupling * dirFactor * mWeight
                 * pressureWeight * me * RUB_DRIVE_SCALE * dt;
@@ -1721,18 +1657,6 @@ malletSlider.addEventListener('input', (e) => {
   updateMalletDisplay();
 });
 
-const sustainSlider = document.getElementById('sustain-slider');
-const sustainValue = document.getElementById('sustain-value');
-const sustainLabels = ['staccato', 'short', 'medium', 'long', 'infinite'];
-function updateSustainDisplay() {
-  const idx = Math.min(4, Math.floor(sustainNorm * 4.99));
-  sustainValue.textContent = sustainLabels[idx];
-}
-sustainSlider.addEventListener('input', (e) => {
-  sustainNorm = parseFloat(e.target.value);
-  updateSustainDisplay();
-});
-
 const volumeSlider = document.getElementById('volume-slider');
 const volumeValue = document.getElementById('volume-value');
 function updateVolumeDisplay() {
@@ -1786,9 +1710,34 @@ document.querySelectorAll('.skin-btn').forEach(btn => {
 });
 
 // ============================================================
-// INTERACTION — unified gesture: quick tap = strike, hold+drag = rub
+// MODE TOGGLE
 // ============================================================
 const hint = document.getElementById('hint');
+const modeStrikeBtn = document.getElementById('mode-strike');
+const modeRubBtn = document.getElementById('mode-rub');
+
+const HINTS = {
+  strike: 'Click or tap anywhere on the gong · center for depth, rim for shimmer',
+  rub: 'Press and hold, then drag in slow circles · give it 2–3 seconds to charge up'
+};
+
+function setMode(newMode) {
+  if (newMode === interactionMode) return;
+  if (interactionMode === 'rub' && rubActive) endRub();
+  interactionMode = newMode;
+  modeStrikeBtn.classList.toggle('active', newMode === 'strike');
+  modeRubBtn.classList.toggle('active', newMode === 'rub');
+  gongCanvas.style.cursor = newMode === 'rub' ? 'grab' : 'pointer';
+  hint.textContent = HINTS[newMode];
+  hint.classList.remove('fade');
+  if (newMode === 'rub') buildModalBank();
+}
+modeStrikeBtn.addEventListener('click', () => setMode('strike'));
+modeRubBtn.addEventListener('click', () => setMode('rub'));
+
+// ============================================================
+// INTERACTION
+// ============================================================
 let firstInteraction = true;
 let rubActive = false;
 const rubState = {
@@ -1801,10 +1750,6 @@ const rubState = {
   lastMoveT: 0,
   outside: false,
 };
-
-let gestureDown = null;
-const STRIKE_TIME = 250;
-const STRIKE_DIST = 10;
 
 function pointerToGong(e) {
   const rect = gongCanvas.getBoundingClientRect();
@@ -1823,7 +1768,8 @@ function pointerToGong(e) {
   return { px, py, R, inside, strikeR, gx, gy };
 }
 
-function handleStrikeAt(p) {
+function handleStrike(e) {
+  const p = pointerToGong(e);
   if (!p.inside) return;
   const strikeTheta = Math.atan2(p.gy - gridCy, p.gx - gridCx);
   strike(p.strikeR, strikeTheta);
@@ -1833,10 +1779,10 @@ function handleStrikeAt(p) {
   if (recentStrikes.length > 6) recentStrikes.shift();
 }
 
-function beginRub(e, p) {
+function startRub(e) {
+  const p = pointerToGong(e);
   if (!p.inside) return;
   buildModalBank();
-  interactionMode = 'rub';
   rubActive = true;
   rubState.x = rubState.prevX = p.px;
   rubState.y = rubState.prevY = p.py;
@@ -1885,48 +1831,21 @@ function endRub() {
   if (!rubActive) return;
   rubActive = false;
   rubState.velocity = 0;
-  interactionMode = 'strike';
-  gongCanvas.style.cursor = 'pointer';
+  gongCanvas.style.cursor = interactionMode === 'rub' ? 'grab' : 'pointer';
 }
 
 gongCanvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   if (firstInteraction) { firstInteraction = false; hint.classList.add('fade'); }
-  const p = pointerToGong(e);
-  if (!p.inside) return;
-  gestureDown = { t: performance.now(), px: p.px, py: p.py, p, e };
+  if (interactionMode === 'strike') handleStrike(e);
+  else startRub(e);
 });
-
 gongCanvas.addEventListener('pointermove', (e) => {
-  if (!gestureDown && !rubActive) return;
-  if (gestureDown && !rubActive) {
-    const dx = e.clientX - gongCanvas.getBoundingClientRect().left - gestureDown.px;
-    const dy = e.clientY - gongCanvas.getBoundingClientRect().top - gestureDown.py;
-    if (Math.sqrt(dx * dx + dy * dy) > STRIKE_DIST) {
-      beginRub(e, gestureDown.p);
-      gestureDown = null;
-    }
-  }
-  if (rubActive) moveRub(e);
+  if (interactionMode === 'rub') moveRub(e);
 });
-
-function handlePointerUp(e) {
-  if (gestureDown) {
-    const elapsed = performance.now() - gestureDown.t;
-    if (elapsed < STRIKE_TIME) {
-      handleStrikeAt(gestureDown.p);
-    } else if (!rubActive) {
-      beginRub(e, gestureDown.p);
-      setTimeout(endRub, 50);
-    }
-    gestureDown = null;
-  }
-  endRub();
-}
-
-gongCanvas.addEventListener('pointerup', handlePointerUp);
-gongCanvas.addEventListener('pointercancel', () => { gestureDown = null; endRub(); });
-window.addEventListener('pointerup', () => { gestureDown = null; endRub(); });
+gongCanvas.addEventListener('pointerup', endRub);
+gongCanvas.addEventListener('pointercancel', endRub);
+window.addEventListener('pointerup', endRub);
 gongCanvas.addEventListener('pointerleave', () => {
   if (rubActive) rubState.outside = true;
 });
@@ -1976,13 +1895,6 @@ function loop() {
 window.addEventListener('resize', resizeAll);
 resizeAll();
 loop();
-
-document.getElementById('zen-toggle').addEventListener('click', () => {
-  const zen = document.body.dataset.zen !== 'true';
-  document.body.dataset.zen = zen;
-  document.getElementById('zen-toggle').textContent = zen ? '○' : '◎';
-  setTimeout(resizeAll, 50);
-});
 </script>
 </body>
 </html>
