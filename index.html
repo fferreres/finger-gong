@@ -1107,7 +1107,7 @@ function initAudio() {
 function resumeAudio() {
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 }
-document.addEventListener('touchstart', resumeAudio, { once: false });
+document.addEventListener('touchstart', () => { initAudio(); resumeAudio(); buildModalBank(); }, { once: false });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) resumeAudio(); });
 
 let modalBank = null;
