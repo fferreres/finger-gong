@@ -1949,7 +1949,7 @@ spaceSlider.addEventListener('input', (e) => {
 const PITCH_RATIOS = [1, 9/8, 5/4, 3/2, 5/3, 2];
 const PITCH_NAMES = ['C', 'D', 'E', 'G', 'A', "C'"];
 let currentPitchIdx = 3;
-let pitchRatio = PITCH_RATIOS[3];
+pitchRatio = PITCH_RATIOS[3];
 
 function updatePitchRack() {
   document.querySelectorAll('.pitch-pick').forEach((btn, i) => {
