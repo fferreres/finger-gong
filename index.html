@@ -1188,7 +1188,6 @@ let modalBank = null;
 function buildModalBank() {
   if (modalBank) return;
   initAudio(); resumeAudio();
-  if (audioCtx.state !== 'running') return;
   const ctx = audioCtx;
   const fundamental = gongFundamental();
   const P = partials();
@@ -2273,8 +2272,6 @@ function loop() {
   const now = performance.now();
   const dt = Math.min(0.1, (now - lastLoopT) / 1000);
   lastLoopT = now;
-
-  if (!modalBank && audioCtx && audioCtx.state === 'running') buildModalBank();
 
   for (let i = 0; i < WAVE_SUBSTEPS; i++) stepWave();
 
