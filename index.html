@@ -1637,10 +1637,13 @@ const gridCx = (GRID - 1) / 2;
 const gridCy = (GRID - 1) / 2;
 const gridR  = GRID / 2 - 2;
 
+const edgeFade = new Float32Array(GRID * GRID);
 for (let y = 0; y < GRID; y++) {
   for (let x = 0; x < GRID; x++) {
     const dx = x - gridCx, dy = y - gridCy;
-    mask[y * GRID + x] = (dx * dx + dy * dy < gridR * gridR) ? 1 : 0;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    mask[y * GRID + x] = (dist < gridR) ? 1 : 0;
+    edgeFade[y * GRID + x] = Math.max(0, Math.min(1, (gridR - dist) / 1.5));
   }
 }
 
@@ -1766,16 +1769,17 @@ function renderWaveToOffscreen() {
   const tR = mat.discEdge[0], tG = mat.discEdge[1], tB = mat.discEdge[2];
   for (let i = 0; i < GRID * GRID; i++) {
     const pIdx = i * 4;
-    if (!mask[i]) { data[pIdx + 3] = 0; continue; }
+    const fade = edgeFade[i];
+    if (fade === 0) { data[pIdx + 3] = 0; continue; }
     const v = u[i] + modalViz[i];
     const clamped = Math.max(-1, Math.min(1, v * 2.2));
     const intensity = Math.abs(clamped);
     if (clamped >= 0) {
       data[pIdx] = pR; data[pIdx + 1] = pG; data[pIdx + 2] = pB;
-      data[pIdx + 3] = Math.floor(intensity * 190);
+      data[pIdx + 3] = Math.floor(intensity * 190 * fade);
     } else {
       data[pIdx] = tR; data[pIdx + 1] = tG; data[pIdx + 2] = tB;
-      data[pIdx + 3] = Math.floor(intensity * 170);
+      data[pIdx + 3] = Math.floor(intensity * 170 * fade);
     }
   }
   wCtx.putImageData(waveImage, 0, 0);
