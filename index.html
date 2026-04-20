@@ -1155,6 +1155,45 @@ function shape() { return SHAPES[currentShape]; }
 function material() { return MATERIALS[currentMaterial]; }
 function partials() { return shape().partials; }
 
+function paperWoodPalette(p) {
+  function blend(c, target, t) {
+    return [
+      Math.round(c[0] + (target[0] - c[0]) * t),
+      Math.round(c[1] + (target[1] - c[1]) * t),
+      Math.round(c[2] + (target[2] - c[2]) * t),
+    ];
+  }
+  const dark = [95, 62, 28];
+  const mid  = [148, 100, 48];
+  return {
+    discHigh: p.discHigh,
+    discMid:  p.discMid,
+    discLow:  blend(p.discLow, mid, 0.4),
+    discEdge: blend(p.discEdge, dark, 0.65),
+    rimHigh:  p.discMid,
+    rimMid:   p.discLow,
+    rimLow:   p.discEdge,
+    bossHigh: p.bossHigh,
+    bossMid:  p.bossMid,
+    bossLow:  blend(p.bossLow, dark, 0.4),
+    halo:     p.halo,
+    haloDeep: p.haloDeep,
+    ringDark: blend(p.ringDark, mid, 0.5),
+  };
+}
+
+let _paletteCache = null;
+let _paletteCacheKey = '';
+function activePalette() {
+  const skin = document.body.getAttribute('data-skin') || 'hearth';
+  const key = currentMaterial + ':' + skin;
+  if (_paletteCacheKey === key && _paletteCache) return _paletteCache;
+  const p = material().palette;
+  _paletteCache = skin === 'paper' ? paperWoodPalette(p) : p;
+  _paletteCacheKey = key;
+  return _paletteCache;
+}
+
 const GONG_SIZES = [
   { label: 'XS',     inches: 14, baseFreq: 261.63, decay: 0.5, scale: 0.60 },
   { label: 'Small',  inches: 22, baseFreq: 130.81, decay: 0.7, scale: 0.72 },
@@ -1606,7 +1645,8 @@ for (let y = 0; y < GRID; y++) {
 }
 
 const WAVE_SPEED_SQ = 0.18;
-const WAVE_SUBSTEPS = 2;
+const WAVE_STEP_DT = 1 / 240;
+let waveTimeAccum = 0;
 
 function stepWave() {
   const baseDamping = material().waveDamping;
@@ -1673,7 +1713,7 @@ const waveImage = wCtx.createImageData(GRID, GRID);
 
 function renderWaveToOffscreen() {
   const data = waveImage.data;
-  const mat = material().palette;
+  const mat = activePalette();
   const pR = mat.discHigh[0], pG = mat.discHigh[1], pB = mat.discHigh[2];
   const tR = mat.discEdge[0], tG = mat.discEdge[1], tB = mat.discEdge[2];
   for (let i = 0; i < GRID * GRID; i++) {
@@ -1726,7 +1766,7 @@ function computeDiscR() {
 }
 
 function drawShapeCenter(cx, cy, R, discR, glow) {
-  const mat = material().palette;
+  const mat = activePalette();
   if (currentShape === 'chau') {
     drawBoss(cx, cy, R * 0.22, glow, mat, 1.0);
     drawRings(cx, cy, discR, [0.86, 0.72, 0.55, 0.38], mat);
@@ -1796,7 +1836,7 @@ function drawBellCavity(cx, cy, R, discR, glow, mat) {
 function drawChladniOverlay(cx, cy, discR) {
   if (!modalBank) return;
 
-  const mat = material().palette;
+  const mat = activePalette();
 
   let maxE = 0;
   for (const r of modalBank.resonators) {
@@ -1864,7 +1904,7 @@ function drawGong() {
   const cx = w / 2, cy = h / 2;
   const R = computeDiscR();
   const discR = R * 0.93;
-  const mat = material().palette;
+  const mat = activePalette();
 
   gctx.clearRect(0, 0, w, h);
 
@@ -2273,12 +2313,12 @@ document.querySelectorAll('#material-buttons .selector-btn').forEach(btn => {
 // ============================================================
 // SKIN TOGGLE
 // ============================================================
-// Purely cosmetic — swaps the page palette. Doesn't touch physics,
-// audio, or the gong's own alloy-based colors.
+// Swaps the page palette. Paper skin warms the gong toward wood tones.
 document.querySelectorAll('.skin-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const skin = btn.dataset.skin;
     document.body.dataset.skin = skin;
+    _paletteCacheKey = '';
     document.querySelectorAll('.skin-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.skin === skin));
   });
@@ -2504,7 +2544,10 @@ function loop() {
   const dt = Math.min(0.1, (now - lastLoopT) / 1000);
   lastLoopT = now;
 
-  for (let i = 0; i < WAVE_SUBSTEPS; i++) stepWave();
+  waveTimeAccum += dt;
+  const waveSteps = Math.min(6, Math.floor(waveTimeAccum / WAVE_STEP_DT));
+  waveTimeAccum -= waveSteps * WAVE_STEP_DT;
+  for (let i = 0; i < waveSteps; i++) stepWave();
 
   if (rubActive) {
     const stillDt = (now - rubState.lastMoveT) / 1000;
