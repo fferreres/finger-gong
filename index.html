@@ -1186,9 +1186,10 @@ function unlockAudio() {
     src.start(0);
   }
   buildModalBank();
+  startModalBank();
 }
 audioCtx.onstatechange = () => {
-  if (audioCtx.state === 'running') buildModalBank();
+  if (audioCtx.state === 'running') { buildModalBank(); startModalBank(); }
 };
 document.addEventListener('touchstart', unlockAudio, { passive: false, capture: true });
 document.addEventListener('click', unlockAudio, { once: false });
@@ -1228,7 +1229,6 @@ function buildModalBank() {
   fmFilter.frequency.value = 5;
   fmFilter.Q.value = 0.5;
   fmNoise.connect(fmFilter);
-  fmNoise.start();
 
   const resonators = [];
   P.forEach((p, i) => {
@@ -1257,8 +1257,6 @@ function buildModalBank() {
     fmDepth1.connect(osc1.frequency);
     fmDepth2.connect(osc2.frequency);
 
-    osc1.start(); osc2.start();
-
     resonators.push({
       osc1, osc2, modGain,
       fmDepth1, fmDepth2,
@@ -1268,7 +1266,16 @@ function buildModalBank() {
     });
   });
 
-  modalBank = { resonators, fmNoise };
+  modalBank = { resonators, fmNoise, started: false };
+  startModalBank();
+}
+
+function startModalBank() {
+  if (!modalBank || modalBank.started) return;
+  if (audioCtx.state !== 'running') return;
+  modalBank.started = true;
+  modalBank.fmNoise.start();
+  modalBank.resonators.forEach(r => { r.osc1.start(); r.osc2.start(); });
 }
 
 function retuneModalBank() {
