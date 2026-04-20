@@ -528,11 +528,10 @@
     position: fixed;
     inset: 0;
     z-index: 9999;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.82);
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     transition: opacity 0.5s ease;
   }
@@ -543,23 +542,71 @@
   .start-prompt {
     text-align: center;
     color: var(--bronze-light, #c8a050);
+    max-width: 340px;
+    padding: 0 24px;
   }
-  .start-icon {
-    font-size: 64px;
-    opacity: 0.7;
-    animation: pulse-glow 2.5s ease-in-out infinite;
-  }
-  .start-text {
-    margin-top: 16px;
+  .start-title {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 22px;
+    font-size: 32px;
+    font-weight: 300;
+    letter-spacing: 0.12em;
+    margin-bottom: 28px;
+    opacity: 0.9;
+  }
+  .start-group {
+    margin-bottom: 20px;
+  }
+  .start-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    opacity: 0.5;
+    margin-bottom: 8px;
+  }
+  .start-options {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .start-opt {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    padding: 6px 12px;
+    border: 1px solid rgba(200, 160, 80, 0.25);
+    border-radius: 4px;
+    background: transparent;
+    color: rgba(200, 160, 80, 0.5);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .start-opt.active {
+    background: rgba(200, 160, 80, 0.15);
+    border-color: rgba(200, 160, 80, 0.6);
+    color: rgb(200, 160, 80);
+  }
+  .start-opt:hover:not(.active) {
+    color: rgba(200, 160, 80, 0.8);
+    border-color: rgba(200, 160, 80, 0.4);
+  }
+  .start-btn {
+    margin-top: 28px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    opacity: 0.8;
+    padding: 10px 48px;
+    border: 1px solid rgba(200, 160, 80, 0.5);
+    border-radius: 6px;
+    background: rgba(200, 160, 80, 0.1);
+    color: rgb(200, 160, 80);
+    cursor: pointer;
+    transition: all 0.25s ease;
   }
-  @keyframes pulse-glow {
-    0%, 100% { opacity: 0.5; transform: scale(1); }
-    50% { opacity: 0.9; transform: scale(1.08); }
+  .start-btn:hover {
+    background: rgba(200, 160, 80, 0.2);
+    border-color: rgba(200, 160, 80, 0.7);
   }
 
   .hint {
@@ -766,8 +813,27 @@
 
 <div class="start-overlay" id="start-overlay">
   <div class="start-prompt">
-    <div class="start-icon">◉</div>
-    <div class="start-text">Tap to begin</div>
+    <div class="start-title">Finger Gong</div>
+    <div class="start-group">
+      <div class="start-label">Shape</div>
+      <div class="start-options" id="start-shapes">
+        <button class="start-opt active" data-shape="chau">Chau</button>
+        <button class="start-opt" data-shape="bao">Bao</button>
+        <button class="start-opt" data-shape="bell">Bell</button>
+        <button class="start-opt" data-shape="wind">Wind</button>
+        <button class="start-opt" data-shape="bowl">Bowl</button>
+      </div>
+    </div>
+    <div class="start-group">
+      <div class="start-label">Alloy</div>
+      <div class="start-options" id="start-alloys">
+        <button class="start-opt active" data-material="bronze">Bronze</button>
+        <button class="start-opt" data-material="brass">Brass</button>
+        <button class="start-opt" data-material="nickel">Nickel</button>
+        <button class="start-opt" data-material="blission">Blission</button>
+      </div>
+    </div>
+    <button class="start-btn" id="start-btn">Start</button>
   </div>
 </div>
 
@@ -2187,19 +2253,37 @@ const startOverlay = document.getElementById('start-overlay');
 let firstInteraction = true;
 let audioUnlocked = false;
 
-startOverlay.addEventListener('touchend', (e) => {
+document.getElementById('start-shapes').addEventListener('click', (e) => {
+  const btn = e.target.closest('.start-opt');
+  if (!btn) return;
+  currentShape = btn.dataset.shape;
+  document.querySelectorAll('#start-shapes .start-opt').forEach(b =>
+    b.classList.toggle('active', b.dataset.shape === currentShape));
+  document.querySelectorAll('#shape-buttons .selector-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.shape === currentShape));
+});
+document.getElementById('start-alloys').addEventListener('click', (e) => {
+  const btn = e.target.closest('.start-opt');
+  if (!btn) return;
+  currentMaterial = btn.dataset.material;
+  document.querySelectorAll('#start-alloys .start-opt').forEach(b =>
+    b.classList.toggle('active', b.dataset.material === currentMaterial));
+  document.querySelectorAll('#material-buttons .selector-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.material === currentMaterial));
+});
+
+function dismissStart() {
+  unlockAudio();
+  audioUnlocked = true;
+  startOverlay.classList.add('hidden');
+  setTimeout(() => startOverlay.remove(), 600);
+  retuneModalBank();
+}
+document.getElementById('start-btn').addEventListener('touchend', (e) => {
   e.preventDefault();
-  unlockAudio();
-  audioUnlocked = true;
-  startOverlay.classList.add('hidden');
-  setTimeout(() => startOverlay.remove(), 600);
+  dismissStart();
 });
-startOverlay.addEventListener('click', () => {
-  unlockAudio();
-  audioUnlocked = true;
-  startOverlay.classList.add('hidden');
-  setTimeout(() => startOverlay.remove(), 600);
-});
+document.getElementById('start-btn').addEventListener('click', dismissStart);
 let rubActive = false;
 const rubState = {
   x: 0, y: 0, prevX: 0, prevY: 0,
