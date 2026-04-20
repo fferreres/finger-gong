@@ -1650,9 +1650,8 @@ let waveTimeAccum = 0;
 
 function stepWave() {
   const baseDamping = material().waveDamping;
-  const audioDamp = Math.min(1, lastEnergy * 12);
-  const modalDamp = Math.min(1, _modalTotalE * 2);
-  const damping = 0.97 + (baseDamping - 0.97) * Math.max(audioDamp, modalDamp);
+  const audioDamp = Math.min(1, lastEnergy * 5);
+  const damping = 0.97 + (baseDamping - 0.97) * audioDamp;
   for (let y = 1; y < GRID - 1; y++) {
     const row = y * GRID;
     for (let x = 1; x < GRID - 1; x++) {
@@ -1667,28 +1666,50 @@ function stepWave() {
   u.set(uNext);
 }
 
-let _modalTotalE = 0;
+// Precompute spatial mode shapes for modal visualization
+const MAX_MODES = 15;
+const modeShapes = [];
+(function precomputeModeShapes() {
+  for (let i = 0; i < MAX_MODES; i++) {
+    const shape = new Float32Array(GRID * GRID);
+    const modeN = 1 + i * 0.55;
+    const symmetric = (i % 2 === 0);
+    const angM = Math.floor(i / 2) + 1;
+    for (let y = 0; y < GRID; y++) {
+      for (let x = 0; x < GRID; x++) {
+        const idx = y * GRID + x;
+        if (!mask[idx]) continue;
+        const dx = x - gridCx, dy = y - gridCy;
+        const rr = Math.sqrt(dx * dx + dy * dy) / gridR;
+        if (symmetric) {
+          shape[idx] = Math.cos(modeN * Math.PI * rr);
+        } else {
+          const theta = Math.atan2(dy, dx);
+          shape[idx] = Math.sin(modeN * Math.PI * rr) * Math.cos(angM * theta + i * 0.37);
+        }
+      }
+    }
+    modeShapes.push(shape);
+  }
+})();
 
-function feedModalToWave() {
-  _modalTotalE = 0;
+const modalViz = new Float32Array(GRID * GRID);
+
+function computeModalViz() {
+  modalViz.fill(0);
   if (!modalBank) return;
   const res = modalBank.resonators;
   const P = partials();
-  for (let i = 0; i < res.length; i++) _modalTotalE += res[i].energy;
-  if (_modalTotalE < 0.001) return;
-  const n = Math.min(20, 6 + Math.ceil(_modalTotalE * 5));
-  for (let k = 0; k < n; k++) {
-    const i = Math.floor(Math.random() * Math.min(P.length, res.length));
+  const now = performance.now() * 0.001;
+  for (let i = 0; i < Math.min(P.length, res.length, modeShapes.length); i++) {
     const e = res[i].energy;
-    if (e < 0.0005) continue;
-    const amp = Math.max(0.005, e * 0.06);
-    const angle = Math.random() * Math.PI * 2;
-    const r = (0.1 + Math.random() * 0.75) * gridR;
-    const gx = Math.round(gridCx + Math.cos(angle) * r);
-    const gy = Math.round(gridCy + Math.sin(angle) * r);
-    if (gx >= 1 && gx < GRID - 1 && gy >= 1 && gy < GRID - 1) {
-      const idx = gy * GRID + gx;
-      if (mask[idx]) u[idx] += amp * (Math.random() - 0.5);
+    if (e < 0.001) continue;
+    const amp = Math.sqrt(e) * 0.15;
+    const vizFreq = 0.3 + i * 0.17;
+    const oscil = Math.sin(now * vizFreq * Math.PI * 2) * amp;
+    const shape = modeShapes[i];
+    for (let j = 0; j < GRID * GRID; j++) {
+      modalViz[j] += shape[j] * oscil;
     }
   }
 }
@@ -1746,7 +1767,7 @@ function renderWaveToOffscreen() {
   for (let i = 0; i < GRID * GRID; i++) {
     const pIdx = i * 4;
     if (!mask[i]) { data[pIdx + 3] = 0; continue; }
-    const v = u[i];
+    const v = u[i] + modalViz[i];
     const clamped = Math.max(-1, Math.min(1, v * 2.2));
     const intensity = Math.abs(clamped);
     if (clamped >= 0) {
@@ -2574,7 +2595,7 @@ function loop() {
   waveTimeAccum += dt;
   const waveSteps = Math.min(6, Math.floor(waveTimeAccum / WAVE_STEP_DT));
   waveTimeAccum -= waveSteps * WAVE_STEP_DT;
-  feedModalToWave();
+  computeModalViz();
   for (let i = 0; i < waveSteps; i++) stepWave();
 
   if (rubActive) {
