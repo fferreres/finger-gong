@@ -1567,7 +1567,9 @@ const WAVE_SPEED_SQ = 0.18;
 const WAVE_SUBSTEPS = 2;
 
 function stepWave() {
-  const damping = material().waveDamping;
+  const baseDamping = material().waveDamping;
+  const audioDamp = Math.min(1, lastEnergy * 5);
+  const damping = 0.94 + (baseDamping - 0.94) * audioDamp;
   for (let y = 1; y < GRID - 1; y++) {
     const row = y * GRID;
     for (let x = 1; x < GRID - 1; x++) {
@@ -1632,15 +1634,10 @@ function renderWaveToOffscreen() {
   const mat = material().palette;
   const pR = mat.discHigh[0], pG = mat.discHigh[1], pB = mat.discHigh[2];
   const tR = mat.discEdge[0], tG = mat.discEdge[1], tB = mat.discEdge[2];
-  const audioScale = Math.min(1, Math.pow(lastEnergy * 6, 0.6));
-  if (audioScale < 0.005) {
-    for (let i = 0; i < GRID * GRID; i++) u[i] *= 0.95;
-    for (let i = 0; i < GRID * GRID; i++) uPrev[i] *= 0.95;
-  }
   for (let i = 0; i < GRID * GRID; i++) {
     const pIdx = i * 4;
     if (!mask[i]) { data[pIdx + 3] = 0; continue; }
-    const v = u[i] * audioScale;
+    const v = u[i];
     const clamped = Math.max(-1, Math.min(1, v * 2.2));
     const intensity = Math.abs(clamped);
     if (clamped >= 0) {
