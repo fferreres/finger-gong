@@ -1083,16 +1083,13 @@ function rgbHex(c) {
 // ============================================================
 // AUDIO — MODAL SYNTHESIS
 // ============================================================
-let audioCtx = null;
+// Create AudioContext at page load so resume() only needs to unlock it
+let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let masterGain = null;
 let analyser = null;
 let timeData = null;
 let freqData = null;
 
-// Master volume. Quadratic mapping so the slider feels natural to the ear
-// (which hears loudness logarithmically). Sits BEFORE soft-clip in the
-// chain, so turning down literally gives the tanh saturator more headroom
-// — the real fix for hot combos, not just a listening-level trim.
 let volumeNorm = 0.7;
 let spaceNorm = 0.35;
 let reverbSend = null;
@@ -1100,8 +1097,7 @@ let reverbWet = null;
 function currentMasterGain() { return volumeNorm * volumeNorm * 0.5; }
 
 function initAudio() {
-  if (audioCtx) return;
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (masterGain) return;
   masterGain = audioCtx.createGain();
   masterGain.gain.value = currentMasterGain();
 
@@ -1175,23 +1171,27 @@ function initAudio() {
   analyser.connect(audioCtx.destination);
 }
 function resumeAudio() {
-  if (audioCtx && audioCtx.state === 'suspended') {
-    audioCtx.resume().then(() => { buildModalBank(); });
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
   }
 }
 function unlockAudio() {
-  initAudio(); resumeAudio(); buildModalBank();
-  if (audioCtx && audioCtx.state !== 'running') {
+  initAudio();
+  if (audioCtx.state !== 'running') {
+    audioCtx.resume();
     const buf = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
     const src = audioCtx.createBufferSource();
     src.buffer = buf;
     src.connect(audioCtx.destination);
-    src.start();
+    src.start(0);
   }
+  buildModalBank();
 }
-document.addEventListener('touchstart', unlockAudio, { once: false });
+audioCtx.onstatechange = () => {
+  if (audioCtx.state === 'running') buildModalBank();
+};
+document.addEventListener('touchstart', unlockAudio, { passive: false, capture: true });
 document.addEventListener('click', unlockAudio, { once: false });
-document.addEventListener('pointerdown', unlockAudio, { once: false });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) resumeAudio(); });
 
 let modalBank = null;
@@ -2165,7 +2165,7 @@ function handleStrikeAt(p) {
 
 function beginRub(e, p) {
   if (!p.inside) return;
-  initAudio(); resumeAudio(); buildModalBank();
+  unlockAudio();
   interactionMode = 'rub';
   rubActive = true;
   rubState.x = rubState.prevX = p.px;
@@ -2221,9 +2221,14 @@ function endRub() {
 
 gongCanvas.style.touchAction = 'none';
 
+gongCanvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  unlockAudio();
+}, { passive: false });
+
 gongCanvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
-  initAudio(); resumeAudio(); buildModalBank();
+  unlockAudio();
   if (firstInteraction) { firstInteraction = false; hint.classList.add('fade'); }
   const p = pointerToGong(e);
   if (!p.inside) return;
