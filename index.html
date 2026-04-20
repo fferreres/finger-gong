@@ -1853,7 +1853,8 @@ function drawGong() {
   gctx.stroke();
 
   gctx.save();
-  gctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+  const isPaper = document.body.dataset.skin === 'paper';
+  gctx.shadowColor = isPaper ? 'rgba(80, 60, 30, 0.35)' : 'rgba(0, 0, 0, 0.55)';
   gctx.shadowBlur = 28;
   gctx.shadowOffsetY = 14;
   gctx.fillStyle = rgbHex(mat.rimMid);
