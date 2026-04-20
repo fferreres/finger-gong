@@ -1186,10 +1186,10 @@ function unlockAudio() {
     src.start(0);
   }
   buildModalBank();
-  startModalBank();
+  ensureModalBankLive();
 }
 audioCtx.onstatechange = () => {
-  if (audioCtx.state === 'running') { buildModalBank(); startModalBank(); }
+  if (audioCtx.state === 'running') { buildModalBank(); ensureModalBankLive(); }
 };
 document.addEventListener('touchstart', unlockAudio, { passive: false, capture: true });
 document.addEventListener('click', unlockAudio, { once: false });
@@ -1266,16 +1266,22 @@ function buildModalBank() {
     });
   });
 
-  modalBank = { resonators, fmNoise, started: false };
-  startModalBank();
+  fmNoise.start();
+  resonators.forEach(r => { r.osc1.start(); r.osc2.start(); });
+  modalBank = { resonators, fmNoise, startedRunning: audioCtx.state === 'running' };
 }
 
-function startModalBank() {
-  if (!modalBank || modalBank.started) return;
+function ensureModalBankLive() {
+  if (!modalBank || modalBank.startedRunning) return;
   if (audioCtx.state !== 'running') return;
-  modalBank.started = true;
-  modalBank.fmNoise.start();
-  modalBank.resonators.forEach(r => { r.osc1.start(); r.osc2.start(); });
+  // Oscillators started while suspended are dead on iOS — rebuild
+  const oldEnergy = modalBank.resonators.map(r => r.energy);
+  modalBank = null;
+  buildModalBank();
+  if (modalBank) {
+    modalBank.resonators.forEach((r, i) => { r.energy = oldEnergy[i] || 0; });
+    modalBank.startedRunning = true;
+  }
 }
 
 function retuneModalBank() {
@@ -2292,6 +2298,7 @@ gongCanvas.addEventListener('pointerleave', (e) => {
 // ============================================================
 let lastLoopT = performance.now();
 function loop() {
+  if (modalBank && !modalBank.startedRunning) ensureModalBankLive();
   const now = performance.now();
   const dt = Math.min(0.1, (now - lastLoopT) / 1000);
   lastLoopT = now;
