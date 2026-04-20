@@ -968,7 +968,7 @@
       display: flex;
       position: fixed;
       bottom: 24px;
-      right: 24px;
+      right: 110px;
       z-index: 100;
       width: 36px;
       height: 36px;
@@ -1101,7 +1101,7 @@
 
     <div class="info-section">
       <div class="info-section-title">The sand</div>
-      <p>The Chladni visualization is computed from <em>Bessel functions</em> — the actual vibrational modes of a circular membrane. Sand particles are pushed by gradient forces away from antinodes toward nodal lines. What you see is real physics: the geometry of sound made visible.</p>
+      <p>The Chladni visualization is computed from <em>Bessel functions</em> — the actual vibrational modes of a circular membrane. Each mode pushes sand away from its vibrating regions. With a single mode, you'd see clean nodal lines. But a gong excites many modes at once — their forces overlap, interfere, and flow, creating the swirling, breathing patterns you see. Real physics, just beautifully complicated.</p>
     </div>
 
     <div class="info-section">
@@ -1437,7 +1437,7 @@ const SIZE_MORPH_DURATION = 10;
 
 let matMorphFrom = null;
 let matMorphT = 1;
-const MAT_MORPH_DURATION = 4;
+const MAT_MORPH_DURATION = 2.67;
 
 let shapeFrom = null;
 let shapeMorphT = 1;
@@ -2765,23 +2765,42 @@ function computeDiscR() {
   return Math.min(w, h) * 0.44 * gongVisualScale();
 }
 
+const SHAPE_VIS = {
+  chau: { bossR: 0.22, bossH: 1.0,  rings: [0.86, 0.72, 0.55, 0.38, 0], cavity: 0 },
+  bao:  { bossR: 0.34, bossH: 1.15, rings: [0.88, 0.62, 0, 0, 0],       cavity: 0 },
+  bell: { bossR: 0,    bossH: 0,    rings: [0.9,  0.75, 0, 0, 0],        cavity: 1 },
+  wind: { bossR: 0.07, bossH: 0.5,  rings: [0.9,  0, 0, 0, 0],           cavity: 0 },
+  bowl: { bossR: 0.12, bossH: 0.6,  rings: [0.92, 0.78, 0.64, 0.50, 0.36], cavity: 0 },
+};
+
+function shapeVisLerped() {
+  const to = SHAPE_VIS[currentShape];
+  if (shapeMorphT >= 1 || !shapeFrom) return to;
+  const from = SHAPE_VIS[shapeFrom];
+  const t = morphEase(shapeMorphT);
+  const rings = to.rings.map((r, i) => from.rings[i] + (r - from.rings[i]) * t);
+  return {
+    bossR: from.bossR + (to.bossR - from.bossR) * t,
+    bossH: from.bossH + (to.bossH - from.bossH) * t,
+    rings,
+    cavity: from.cavity + (to.cavity - from.cavity) * t,
+  };
+}
+
 function drawShapeCenter(cx, cy, R, discR, glow) {
   const mat = activePalette();
-  if (currentShape === 'chau') {
-    drawBoss(cx, cy, R * 0.22, glow, mat, 1.0);
-    drawRings(cx, cy, discR, [0.86, 0.72, 0.55, 0.38], mat);
-  } else if (currentShape === 'bao') {
-    drawRings(cx, cy, discR, [0.88, 0.62], mat);
-    drawBoss(cx, cy, R * 0.34, glow, mat, 1.15);
-  } else if (currentShape === 'bell') {
+  const v = shapeVisLerped();
+  const activeRings = v.rings.filter(r => r > 0.01);
+  if (v.cavity > 0.01) {
+    gctx.globalAlpha = v.cavity;
     drawBellCavity(cx, cy, R, discR, glow, mat);
-    drawRings(cx, cy, discR, [0.9, 0.75], mat);
-  } else if (currentShape === 'wind') {
-    drawRings(cx, cy, discR, [0.9], mat);
-    drawBoss(cx, cy, R * 0.07, glow, mat, 0.5);
-  } else if (currentShape === 'bowl') {
-    drawRings(cx, cy, discR, [0.92, 0.78, 0.64, 0.50, 0.36], mat);
-    drawBoss(cx, cy, R * 0.12, glow, mat, 0.6);
+    gctx.globalAlpha = 1;
+  }
+  if (v.bossR > 0.005) {
+    drawBoss(cx, cy, R * v.bossR, glow, mat, v.bossH);
+  }
+  if (activeRings.length > 0) {
+    drawRings(cx, cy, discR, activeRings, mat);
   }
 }
 
