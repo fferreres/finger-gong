@@ -1469,7 +1469,7 @@ function updateModalBank(velocity, contactR, dt) {
     const tau = Math.max(0.15, p.decay * decayMult * DECAY_FACTOR_MULT());
     const decayFactor = Math.exp(-dt / tau);
     const drive = p.amp * velocity * coupling * dirFactor * mWeight
-                * pressureWeight * me * RUB_DRIVE_SCALE * dt;
+                * pressureWeight * me * rubState.contactForce * RUB_DRIVE_SCALE * dt;
     r.energy = r.energy * decayFactor + drive;
     if (r.energy > ENERGY_CAP) r.energy = ENERGY_CAP;
     if (r.energy < 1e-6)       r.energy = 0;
@@ -1497,12 +1497,12 @@ function updateModalBank(velocity, contactR, dt) {
   }
 }
 
-function strike(strikeR, strikeTheta) {
+function strike(strikeR, strikeTheta, force) {
   initAudio(); resumeAudio();
   buildModalBank();
   const now = audioCtx.currentTime;
   const P = partials();
-  const me = malletEnergy();
+  const me = malletEnergy() * (force || 1);
 
   P.forEach((p, i) => {
     const r = modalBank.resonators[i];
@@ -2331,6 +2331,7 @@ const rubState = {
   velocity: 0,
   vx: 0, vy: 0,
   pressure: 0,
+  contactForce: 1,
   lastMoveT: 0,
   outside: false,
 };
@@ -2357,11 +2358,17 @@ function pointerToGong(e) {
   return { px, py, R, inside, strikeR, gx, gy };
 }
 
-function handleStrikeAt(p) {
+function contactForce(contactSize) {
+  const cs = Math.max(0, contactSize - 5);
+  return 0.5 + Math.min(1.0, cs / 30) * 0.5;
+}
+
+function handleStrikeAt(p, contactSize) {
   if (!p.inside) return;
+  const force = contactForce(contactSize || 0);
   const strikeTheta = Math.atan2(p.gy - gridCy, p.gx - gridCx);
-  strike(p.strikeR, strikeTheta);
-  const strength = (0.85 + (1 - p.strikeR) * 0.25) * malletEnergy();
+  strike(p.strikeR, strikeTheta, force);
+  const strength = (0.85 + (1 - p.strikeR) * 0.25) * malletEnergy() * force;
   injectStrike(p.gx, p.gy, strength);
   recentStrikes.push({ x: p.px, y: p.py, t: performance.now() });
   if (recentStrikes.length > 6) recentStrikes.shift();
@@ -2413,6 +2420,8 @@ function moveRub(e) {
   rubState.vx = rubState.vx * 0.55 + ivx * 0.45;
   rubState.vy = rubState.vy * 0.55 + ivy * 0.45;
   rubState.lastMoveT = now;
+  const cs = Math.max(e.width || 0, e.height || 0);
+  rubState.contactForce = contactForce(cs);
 }
 
 function endRub() {
@@ -2436,7 +2445,8 @@ gongCanvas.addEventListener('pointerdown', (e) => {
   if (firstInteraction) { firstInteraction = false; hint.classList.add('fade'); }
   const p = pointerToGong(e);
   if (!p.inside) return;
-  gestureDowns.set(e.pointerId, { t: performance.now(), px: p.px, py: p.py, p, pointerId: e.pointerId });
+  const contactSize = Math.max(e.width || 0, e.height || 0);
+  gestureDowns.set(e.pointerId, { t: performance.now(), px: p.px, py: p.py, p, pointerId: e.pointerId, contactSize });
 });
 
 gongCanvas.addEventListener('pointermove', (e) => {
@@ -2461,7 +2471,7 @@ function handlePointerUp(e) {
   if (g) {
     const elapsed = performance.now() - g.t;
     if (elapsed < STRIKE_TIME) {
-      handleStrikeAt(g.p);
+      handleStrikeAt(g.p, g.contactSize);
     } else if (!rubActive) {
       beginRub(e, g.p);
       setTimeout(endRub, 50);
