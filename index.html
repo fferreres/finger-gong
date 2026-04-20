@@ -1503,8 +1503,9 @@ const WAVE_SUBSTEPS = 2;
 
 function stepWave() {
   const baseDamping = material().waveDamping;
-  const sustainScale = DECAY_FACTOR_MULT();
-  const damping = Math.pow(baseDamping, 1 / Math.max(0.1, sustainScale));
+  const sf = Math.max(0.05, DECAY_FACTOR_MULT());
+  const dampRate = (1 - baseDamping) / Math.pow(sf, 0.35);
+  const damping = Math.max(0.95, 1 - dampRate);
   for (let y = 1; y < GRID - 1; y++) {
     const row = y * GRID;
     for (let x = 1; x < GRID - 1; x++) {
