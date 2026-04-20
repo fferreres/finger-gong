@@ -1204,7 +1204,7 @@ function gongSize_()        { return GONG_SIZES[gongSizeIdx]; }
 function gongDiameterIn()   { return gongSize_().inches; }
 function gongVisualScale()  { return gongSize_().scale; }
 function gongFundamental()  { return gongSize_().baseFreq * shape().pitchMult * pitchRatio; }
-function gongDecayMult()    { return material().decayMult; }
+function gongDecayMult()    { return material().decayMult * gongSize_().decay; }
 
 function malletContactRadius() { return 0.015 + malletNorm * 0.115; }
 function malletSigma()      { return malletContactRadius() * gridR; }
