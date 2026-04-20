@@ -1524,6 +1524,22 @@ function strike(strikeR, strikeTheta) {
     r.energy = Math.min(ENERGY_CAP, r.energy + deposit * headroom);
   });
 
+  // Nonlinear pitch bend — hard strikes push pitch down, recovers over ~1s
+  modalBank.resonators.forEach((r, i) => {
+    if (r.energy < 0.05) return;
+    const bendDepth = Math.min(0.035, r.energy * 0.012) / (1 + i * 0.3);
+    if (bendDepth < 0.0005) return;
+    const detune = 0.004 + ((i * 13) % 7) * 0.0006;
+    const f1 = r.freq * (1 + detune);
+    const f2 = r.freq * (1 - detune * 0.7);
+    r.osc1.frequency.cancelScheduledValues(now);
+    r.osc2.frequency.cancelScheduledValues(now);
+    r.osc1.frequency.setValueAtTime(f1 * (1 - bendDepth), now);
+    r.osc2.frequency.setValueAtTime(f2 * (1 - bendDepth), now);
+    r.osc1.frequency.setTargetAtTime(f1, now, 0.6);
+    r.osc2.frequency.setTargetAtTime(f2, now, 0.6);
+  });
+
   const nLen = Math.floor(audioCtx.sampleRate * 0.15);
   const nBuf = audioCtx.createBuffer(1, nLen, audioCtx.sampleRate);
   const nd = nBuf.getChannelData(0);
@@ -1542,6 +1558,32 @@ function strike(strikeR, strikeTheta) {
   ng.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
   noise.connect(nf); nf.connect(ng); ng.connect(masterGain);
   noise.start(now); noise.stop(now + 0.3);
+}
+
+function coupleModesStep(dt) {
+  if (!modalBank) return;
+  const res = modalBank.resonators;
+  const n = res.length;
+  const totalEnergy = res.reduce((s, r) => s + r.energy, 0);
+  if (totalEnergy < 0.01) return;
+
+  for (let i = 0; i < n - 1; i++) {
+    const e1 = res[i].energy, e2 = res[i + 1].energy;
+    const peak = Math.max(e1, e2);
+    if (peak < 0.005) continue;
+    const transfer = peak * dt * 0.06 * (Math.random() - 0.48);
+    const clamped = Math.max(-e1 * 0.01, Math.min(e2 * 0.01, transfer));
+    res[i].energy = Math.max(0, res[i].energy - clamped);
+    res[i + 1].energy = Math.max(0, res[i + 1].energy + clamped);
+  }
+
+  for (let i = 0; i < Math.min(6, n); i++) {
+    if (res[i].energy < 0.08) continue;
+    const target = i + 2 + Math.floor(Math.random() * Math.min(5, n - i - 2));
+    if (target >= n) continue;
+    const spawn = res[i].energy * dt * 0.015 * Math.random();
+    res[target].energy = Math.min(ENERGY_CAP, res[target].energy + spawn);
+  }
 }
 
 // ============================================================
@@ -2476,6 +2518,7 @@ function loop() {
     const v = active ? rubState.velocity : 0;
     const cr = active ? rubState.strikeR : 0;
     updateModalBank(v, cr, dt);
+    coupleModesStep(dt);
 
     if (dampenActive) {
       const held = (performance.now() - dampenStart) / 1000;
