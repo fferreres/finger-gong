@@ -1204,7 +1204,7 @@ function gongSize_()        { return GONG_SIZES[gongSizeIdx]; }
 function gongDiameterIn()   { return gongSize_().inches; }
 function gongVisualScale()  { return gongSize_().scale; }
 function gongFundamental()  { return gongSize_().baseFreq * shape().pitchMult * pitchRatio; }
-function gongDecayMult()    { return material().decayMult * gongSize_().decay; }
+function gongDecayMult()    { return material().decayMult; }
 
 function malletContactRadius() { return 0.015 + malletNorm * 0.115; }
 function malletSigma()      { return malletContactRadius() * gridR; }
@@ -1650,9 +1650,8 @@ let waveTimeAccum = 0;
 
 function stepWave() {
   const baseDamping = material().waveDamping;
-  const audioDamp = Math.min(1, lastEnergy * 12);
-  const modalDamp = Math.min(1, _modalTotalE * 2);
-  const damping = 0.97 + (baseDamping - 0.97) * Math.max(audioDamp, modalDamp);
+  const audioDamp = Math.min(1, lastEnergy * 5);
+  const damping = 0.94 + (baseDamping - 0.94) * audioDamp;
   for (let y = 1; y < GRID - 1; y++) {
     const row = y * GRID;
     for (let x = 1; x < GRID - 1; x++) {
@@ -1665,32 +1664,6 @@ function stepWave() {
   for (let i = 0; i < GRID * GRID; i++) { if (!mask[i]) uNext[i] = 0; }
   uPrev.set(u);
   u.set(uNext);
-}
-
-let _modalTotalE = 0;
-
-function feedModalToWave() {
-  _modalTotalE = 0;
-  if (!modalBank) return;
-  const res = modalBank.resonators;
-  const P = partials();
-  for (let i = 0; i < res.length; i++) _modalTotalE += res[i].energy;
-  if (_modalTotalE < 0.001) return;
-  const n = Math.min(20, 6 + Math.ceil(_modalTotalE * 5));
-  for (let k = 0; k < n; k++) {
-    const i = Math.floor(Math.random() * Math.min(P.length, res.length));
-    const e = res[i].energy;
-    if (e < 0.0005) continue;
-    const amp = Math.max(0.005, e * 0.06);
-    const angle = Math.random() * Math.PI * 2;
-    const r = (0.1 + Math.random() * 0.75) * gridR;
-    const gx = Math.round(gridCx + Math.cos(angle) * r);
-    const gy = Math.round(gridCy + Math.sin(angle) * r);
-    if (gx >= 1 && gx < GRID - 1 && gy >= 1 && gy < GRID - 1) {
-      const idx = gy * GRID + gx;
-      if (mask[idx]) u[idx] += amp * (Math.random() - 0.5);
-    }
-  }
 }
 
 function injectStrike(gx, gy, strength) {
@@ -2574,7 +2547,6 @@ function loop() {
   waveTimeAccum += dt;
   const waveSteps = Math.min(6, Math.floor(waveTimeAccum / WAVE_STEP_DT));
   waveTimeAccum -= waveSteps * WAVE_STEP_DT;
-  feedModalToWave();
   for (let i = 0; i < waveSteps; i++) stepWave();
 
   if (rubActive) {
