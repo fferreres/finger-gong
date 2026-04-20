@@ -1568,10 +1568,14 @@ function renderWaveToOffscreen() {
   const pR = mat.discHigh[0], pG = mat.discHigh[1], pB = mat.discHigh[2];
   const tR = mat.discEdge[0], tG = mat.discEdge[1], tB = mat.discEdge[2];
   const audioScale = Math.min(1, lastEnergy * 8);
+  if (audioScale < 0.01) {
+    for (let i = 0; i < GRID * GRID; i++) u[i] *= 0.85;
+    for (let i = 0; i < GRID * GRID; i++) uPrev[i] *= 0.85;
+  }
   for (let i = 0; i < GRID * GRID; i++) {
     const pIdx = i * 4;
     if (!mask[i]) { data[pIdx + 3] = 0; continue; }
-    const v = u[i] * (0.3 + 0.7 * audioScale);
+    const v = u[i] * audioScale;
     const clamped = Math.max(-1, Math.min(1, v * 2.2));
     const intensity = Math.abs(clamped);
     if (clamped >= 0) {
