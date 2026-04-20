@@ -917,9 +917,9 @@
         <div class="control">
           <div class="control-label">
             <span class="control-name">Sustain</span>
-            <span class="control-value" id="sustain-value">mute</span>
+            <span class="control-value" id="sustain-value">50%</span>
           </div>
-          <input type="range" id="sustain-slider" min="0" max="1" step="0.001" value="0">
+          <input type="range" id="sustain-slider" min="0" max="1" step="0.001" value="0.5">
         </div>
         <div class="control">
           <div class="control-label">
@@ -1417,7 +1417,7 @@ const RUB_DRIVE_SCALE   = 1.4;
 const STRIKE_SCALE      = 1.7;
 const AMP_SCALE         = 0.45;
 const ENERGY_CAP        = 3.5;
-let sustainNorm = 0.0;
+let sustainNorm = 0.5;
 function DECAY_FACTOR_MULT() { return 0.02 + sustainNorm * 0.78; }
 
 function updateModalBank(velocity, contactR, dt) {
