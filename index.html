@@ -350,6 +350,126 @@
   }
   .chladni-toggle:focus { outline: none; }
 
+  .sand-gear {
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    transform: translateX(calc(-50% + 46px));
+    width: 22px; height: 22px;
+    border: 1px solid var(--bg-panel-border);
+    background: var(--control-bg);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--text-dim);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    padding: 0;
+    line-height: 1;
+  }
+  .sand-gear.visible { display: flex; }
+  .sand-gear:hover { color: var(--gold); background: rgba(255,255,255,0.12); }
+  .sand-gear.active { color: var(--gold); border-color: var(--btn-glow); }
+  .sand-gear:focus { outline: none; }
+  .sand-reset { transform: translateX(calc(-50% + 72px)) !important; font-size: 14px !important; }
+
+  .sand-debug {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    width: 260px;
+    background: rgba(20,16,10,0.92);
+    border: 1px solid rgba(180,140,60,0.3);
+    border-radius: 10px;
+    padding: 10px 14px;
+    z-index: 1000;
+    font-family: 'Inter', monospace;
+    font-size: 10px;
+    color: #c8a860;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .sand-debug.visible { display: block; }
+  .sand-debug label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 4px 0;
+  }
+  .sand-debug input[type=range] {
+    width: 120px;
+    accent-color: #c8a860;
+    height: 14px;
+  }
+  .sand-debug .sd-val {
+    width: 36px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .sand-debug h4 {
+    margin: 0 0 6px;
+    font-size: 11px;
+    color: #e0c070;
+    letter-spacing: 0.05em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .sand-debug .sd-energy {
+    color: #80ff80;
+    font-size: 10px;
+  }
+  .sd-toggles {
+    display: flex;
+    gap: 4px;
+    margin: 5px 0;
+  }
+  .sd-toggles span {
+    font-size: 9px;
+    color: #a08040;
+    min-width: 42px;
+  }
+  .sd-btn {
+    font-size: 9px;
+    padding: 2px 7px;
+    border: 1px solid rgba(180,140,60,0.3);
+    border-radius: 4px;
+    background: rgba(40,30,15,0.6);
+    color: #a08040;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .sd-btn.active {
+    background: rgba(180,140,60,0.25);
+    color: #e0c070;
+    border-color: #c8a860;
+  }
+  .sd-presets {
+    display: flex;
+    gap: 4px;
+    margin: 0 0 6px;
+  }
+  .sd-presets span { font-size: 9px; color: #a08040; min-width: 42px; }
+  .sd-preset-btn {
+    font-size: 9px;
+    padding: 2px 8px;
+    border: 1px solid rgba(180,140,60,0.3);
+    border-radius: 4px;
+    background: rgba(40,30,15,0.6);
+    color: #a08040;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .sd-preset-btn:hover { color: #e0c070; }
+
   .mallet-rack {
     position: absolute;
     right: -6px;
@@ -904,6 +1024,8 @@
         </div>
         <button class="dampen-btn" id="dampen-btn" title="Hold to dampen">◎</button>
         <button class="chladni-toggle" id="chladni-toggle" title="Toggle Chladni sand visualization">Sand</button>
+        <button class="sand-gear" id="sand-gear" title="Sand tuning">&#9881;</button>
+        <button class="sand-gear sand-reset" id="sand-reset" title="Reset sand">&#8635;</button>
         <div class="mallet-rack" id="mallet-rack">
           <button class="mallet-pick" data-size="0" data-mallet="0" title="Wooden stick"></button>
           <button class="mallet-pick" data-size="1" data-mallet="1" title="Light felt"></button>
@@ -1766,12 +1888,14 @@ function computeModalViz() {
 // CHLADNI SAND PARTICLE SYSTEM
 // ============================================================
 let chladniMode = false;
-const SAND_COUNT = 4000;
-const sandX = new Float32Array(SAND_COUNT);
-const sandY = new Float32Array(SAND_COUNT);
-const sandVx = new Float32Array(SAND_COUNT);
-const sandVy = new Float32Array(SAND_COUNT);
-const sandSettled = new Float32Array(SAND_COUNT); // 0-1 how settled
+const SAND_MAX = 12000;
+let SAND_COUNT = 6000;
+const sandX = new Float32Array(SAND_MAX);
+const sandY = new Float32Array(SAND_MAX);
+const sandVx = new Float32Array(SAND_MAX);
+const sandVy = new Float32Array(SAND_MAX);
+const sandSettled = new Float32Array(SAND_MAX);
+const sandPhase = new Float32Array(SAND_MAX);
 
 // Precompute Bessel-based Chladni mode shapes on a finer grid
 // Mode (m,n) mapping for the 15 modes:
@@ -1832,6 +1956,27 @@ function besselJ(m, x) {
   return sum;
 }
 
+// Phase offsets per mode — modes sharing the same m are spaced evenly
+// so their angular contributions cancel (no directional bias)
+// m=0: phase irrelevant. m=1 (3 modes): 0, 2π/3, 4π/3.
+// m=2 (2 modes): 0, π. m=3 (2 modes): 0, π. Single modes: 0.
+const CHLADNI_PHASE = (function() {
+  const ph = new Array(15).fill(0);
+  const counts = {};
+  const idxInGroup = {};
+  CHLADNI_MODES.forEach(({m}, idx) => {
+    if (m === 0) return;
+    if (!counts[m]) counts[m] = 0;
+    idxInGroup[idx] = counts[m];
+    counts[m]++;
+  });
+  CHLADNI_MODES.forEach(({m}, idx) => {
+    if (m === 0) return;
+    ph[idx] = (2 * Math.PI * idxInGroup[idx]) / counts[m];
+  });
+  return ph;
+})();
+
 // Precompute Chladni displacement field on a grid matching GRID size
 const CHLADNI_GRID = GRID;
 const chladniShapes = [];
@@ -1849,7 +1994,7 @@ const chladniShapes = [];
         if (r > 1) continue;
         const theta = Math.atan2(dy, dx);
         const radial = besselJ(m, k_mn * r);
-        const angular = m === 0 ? 1 : Math.cos(m * theta + idx * 0.37);
+        const angular = m === 0 ? 1 : Math.cos(m * theta + CHLADNI_PHASE[idx]);
         shape[gi] = radial * angular;
       }
     }
@@ -1866,183 +2011,357 @@ const chladniShapes = [];
 })();
 
 function initSandParticles() {
-  for (let i = 0; i < SAND_COUNT; i++) {
-    // Random position within disc
-    const angle = Math.random() * Math.PI * 2;
-    const r = Math.sqrt(Math.random()) * gridR * 0.95;
-    sandX[i] = gridCx + Math.cos(angle) * r;
-    sandY[i] = gridCy + Math.sin(angle) * r;
-    sandVx[i] = 0;
-    sandVy[i] = 0;
-    sandSettled[i] = 0;
+  for (let i = 0; i < SAND_MAX; i++) {
+    if (i < SAND_COUNT) {
+      const angle = Math.random() * Math.PI * 2;
+      const r = Math.sqrt(Math.random()) * gridR * 0.95;
+      sandX[i] = gridCx + Math.cos(angle) * r;
+      sandY[i] = gridCy + Math.sin(angle) * r;
+      sandVx[i] = 0;
+      sandVy[i] = 0;
+      sandSettled[i] = 0;
+      sandPhase[i] = Math.random() * Math.PI * 2;
+    } else {
+      sandX[i] = -999;
+      sandY[i] = -999;
+    }
   }
 }
 initSandParticles();
+let sandFadeIn = 1;
 
-// Combined displacement field — recomputed each frame for sand physics
-const chladniField = new Float32Array(CHLADNI_GRID * CHLADNI_GRID);
-// Precomputed gradient fields (x and y components)
-const chladniGradX = new Float32Array(CHLADNI_GRID * CHLADNI_GRID);
-const chladniGradY = new Float32Array(CHLADNI_GRID * CHLADNI_GRID);
+
+
+// Amplitude envelope — tracks time-averaged |displacement|² from wave sim + modal viz
+// This naturally produces intricate interference patterns
+const chladniEnvelope = new Float32Array(GRID * GRID);
+const chladniGradX = new Float32Array(GRID * GRID);
+const chladniGradY = new Float32Array(GRID * GRID);
+const ENVELOPE_RISE = 0.2;
+const ENVELOPE_FALL = 0.12;
 
 function computeChladniField() {
-  chladniField.fill(0);
-  if (!modalBank) return;
-  const res = modalBank.resonators;
-  const nModes = Math.min(res.length, chladniShapes.length);
-  for (let i = 0; i < nModes; i++) {
-    const e = res[i].energy;
-    if (e < 0.001) continue;
-    const w = Math.sqrt(e);
-    const shape = chladniShapes[i];
-    for (let j = 0; j < CHLADNI_GRID * CHLADNI_GRID; j++) {
-      chladniField[j] += shape[j] * w;
+  chladniGradX.fill(0);
+  chladniGradY.fill(0);
+
+  // Update envelope from current wave displacement (u + modalViz)
+  for (let i = 0; i < GRID * GRID; i++) {
+    if (!mask[i]) continue;
+    const displacement = Math.abs(u[i] + modalViz[i]);
+    // Exponential moving average — fast rise, slow fall for visible trails
+    if (displacement > chladniEnvelope[i]) {
+      chladniEnvelope[i] += (displacement - chladniEnvelope[i]) * ENVELOPE_RISE;
+    } else {
+      chladniEnvelope[i] += (displacement - chladniEnvelope[i]) * ENVELOPE_FALL;
     }
   }
-  // Compute gradient using central differences
-  for (let y = 1; y < CHLADNI_GRID - 1; y++) {
-    for (let x = 1; x < CHLADNI_GRID - 1; x++) {
-      const idx = y * CHLADNI_GRID + x;
+
+  // Gradient of envelope — particles move DOWN this (toward nodal lines)
+  for (let y = 1; y < GRID - 1; y++) {
+    for (let x = 1; x < GRID - 1; x++) {
+      const idx = y * GRID + x;
       if (!mask[idx]) continue;
-      chladniGradX[idx] = (chladniField[idx + 1] - chladniField[idx - 1]) * 0.5;
-      chladniGradY[idx] = (chladniField[idx + CHLADNI_GRID] - chladniField[idx - CHLADNI_GRID]) * 0.5;
+      const xp = mask[idx + 1] ? chladniEnvelope[idx + 1] : chladniEnvelope[idx];
+      const xm = mask[idx - 1] ? chladniEnvelope[idx - 1] : chladniEnvelope[idx];
+      const yp = mask[idx + GRID] ? chladniEnvelope[idx + GRID] : chladniEnvelope[idx];
+      const ym = mask[idx - GRID] ? chladniEnvelope[idx - GRID] : chladniEnvelope[idx];
+      chladniGradX[idx] = (xp - xm) * 0.5;
+      chladniGradY[idx] = (yp - ym) * 0.5;
     }
   }
 }
 
+let sandTime = 0;
+let sandTotalEnergy = 0;
 function updateSandParticles(dt) {
   if (!modalBank) return;
+  sandTime += dt;
 
-  // Recompute the combined field and gradient once per frame
   computeChladniField();
 
-  // Calculate total energy to scale forces
   const res = modalBank.resonators;
   let totalEnergy = 0;
   for (let i = 0; i < res.length; i++) totalEnergy += res[i].energy;
+  sandTotalEnergy = totalEnergy;
 
-  const forceScale = Math.min(10, totalEnergy * 4.0);
-  const friction = 0.86;
-  const noiseScale = totalEnergy > 0.05 ? 0.12 * Math.min(1, totalEnergy) : 0.015;
+  const energyNorm = Math.min(1, totalEnergy * 2.0);
+  const p = (typeof sdParams !== 'undefined') ? sdParams : {
+    force: 1240, friction: 0.94, bounce: 650, noise: 45, maxv: 200, scatter: 40, bouncehz: 80, gravity: 1, edge: 'bounce', refill: 'auto'
+  };
+
+  // Update energy readout
+  const eEl = document.getElementById('sd-energy');
+  if (eEl) eEl.textContent = 'E: ' + totalEnergy.toFixed(3);
+
+  const forceBase = p.force;
+  const forceScale = forceBase * energyNorm;
+  const friction = p.friction;
+  const bounceStr = p.bounce * energyNorm * energyNorm;
+  const noiseStr = p.noise * (0.2 + energyNorm * 0.8);
+  const maxV = p.maxv;
+  const bounceHz = p.bouncehz;
+
+  // Density grid for inter-particle gravity (blurred to prevent grid artifacts)
+  const GC = 28, gcSz = GRID / GC;
+  const gDensRaw = new Float32Array(GC * GC);
+  for (let i = 0; i < SAND_COUNT; i++) {
+    if (sandX[i] < -900) continue;
+    const cx = Math.floor(sandX[i] / gcSz), cy = Math.floor(sandY[i] / gcSz);
+    if (cx >= 0 && cx < GC && cy >= 0 && cy < GC) gDensRaw[cy * GC + cx]++;
+  }
+  // Two-pass box blur for smooth field
+  const gDens = new Float32Array(GC * GC);
+  const gDensTmp = new Float32Array(GC * GC);
+  for (let y = 0; y < GC; y++) {
+    for (let x = 0; x < GC; x++) {
+      let s = 0, c = 0;
+      for (let dx = -2; dx <= 2; dx++) {
+        const nx = x + dx;
+        if (nx >= 0 && nx < GC) { s += gDensRaw[y * GC + nx]; c++; }
+      }
+      gDensTmp[y * GC + x] = s / c;
+    }
+  }
+  for (let y = 0; y < GC; y++) {
+    for (let x = 0; x < GC; x++) {
+      let s = 0, c = 0;
+      for (let dy = -2; dy <= 2; dy++) {
+        const ny = y + dy;
+        if (ny >= 0 && ny < GC) { s += gDensTmp[ny * GC + x]; c++; }
+      }
+      gDens[y * GC + x] = s / c;
+    }
+  }
+  // Gradient of blurred density
+  const gDensGX = new Float32Array(GC * GC);
+  const gDensGY = new Float32Array(GC * GC);
+  for (let y = 1; y < GC - 1; y++) {
+    for (let x = 1; x < GC - 1; x++) {
+      const idx = y * GC + x;
+      gDensGX[idx] = (gDens[idx + 1] - gDens[idx - 1]) * 0.5;
+      gDensGY[idx] = (gDens[idx + GC] - gDens[idx - GC]) * 0.5;
+    }
+  }
 
   for (let i = 0; i < SAND_COUNT; i++) {
     const gx = sandX[i], gy = sandY[i];
 
-    // Check if inside disc
     const ddx = gx - gridCx, ddy = gy - gridCy;
     const dist = Math.sqrt(ddx * ddx + ddy * ddy);
     if (dist > gridR * 0.96) {
-      // Push back inside
-      const angle = Math.atan2(ddy, ddx);
-      sandX[i] = gridCx + Math.cos(angle) * gridR * 0.94;
-      sandY[i] = gridCy + Math.sin(angle) * gridR * 0.94;
-      sandVx[i] *= -0.3;
-      sandVy[i] *= -0.3;
+      if (p.edge === 'bounce') {
+        const angle = Math.atan2(ddy, ddx);
+        sandX[i] = gridCx + Math.cos(angle) * gridR * 0.92;
+        sandY[i] = gridCy + Math.sin(angle) * gridR * 0.92;
+        // Reflect velocity inward with scatter
+        const nx = -Math.cos(angle), ny = -Math.sin(angle);
+        const dot = sandVx[i] * nx + sandVy[i] * ny;
+        sandVx[i] = nx * Math.abs(dot) * 0.4 + (Math.random() - 0.5) * 3;
+        sandVy[i] = ny * Math.abs(dot) * 0.4 + (Math.random() - 0.5) * 3;
+      } else {
+        sandX[i] = -999;
+        sandY[i] = -999;
+        sandVx[i] = 0;
+        sandVy[i] = 0;
+      }
       continue;
     }
 
-    if (totalEnergy < 0.005) {
-      // Very low energy — particles barely move
-      sandVx[i] *= 0.95;
-      sandVy[i] *= 0.95;
-      sandX[i] += sandVx[i] * dt;
-      sandY[i] += sandVy[i] * dt;
-      sandSettled[i] = Math.min(1, sandSettled[i] + dt * 2);
-      continue;
-    }
-
-    // Sample field and gradient from precomputed arrays
     const ix = Math.round(gx), iy = Math.round(gy);
     if (ix < 1 || ix >= CHLADNI_GRID - 1 || iy < 1 || iy >= CHLADNI_GRID - 1) continue;
     const gi = iy * CHLADNI_GRID + ix;
 
-    const amp = chladniField[gi];
-    const absAmp = Math.abs(amp);
+    const env = chladniEnvelope[gi];
     const gdx = chladniGradX[gi];
     const gdy = chladniGradY[gi];
 
-    // Force pushes particles away from high |amplitude| toward nodal lines
-    // Gradient of |amplitude|^2 = 2*amplitude*grad(amplitude)
-    // Particles move DOWN this gradient (toward zeros)
     let fx = 0, fy = 0;
+
+    // Gradient force — push particles down the envelope gradient (toward nodal lines)
     const gradMag = Math.sqrt(gdx * gdx + gdy * gdy);
-    if (gradMag > 0.001) {
-      const pushStrength = absAmp * forceScale;
-      // Sign of amp matters: we want to push toward zero crossings
-      const sign = amp > 0 ? 1 : -1;
-      fx = -gdx * sign * pushStrength;
-      fy = -gdy * sign * pushStrength;
+    if (gradMag > 0.0001) {
+      const pushStr = env * forceScale;
+      fx = -gdx * pushStr;
+      fy = -gdy * pushStr;
     }
 
-    // Add random jitter proportional to energy (thermal noise / vibration)
-    fx += (Math.random() - 0.5) * noiseScale * forceScale;
-    fy += (Math.random() - 0.5) * noiseScale * forceScale;
+    // Bounce: periodic lateral kicks on antinodes — dancing sand
+    if (env > 0.01 && totalEnergy > 0.005) {
+      const phase = Math.sin(sandTime * bounceHz + sandPhase[i]);
+      const mag = env * bounceStr * (0.5 + 0.5 * phase);
+      const a = sandPhase[i] + sandTime * 4.1;
+      fx += Math.cos(a) * mag;
+      fy += Math.sin(a) * mag;
+    }
 
-    // Update velocity with force and friction
-    sandVx[i] = sandVx[i] * friction + fx * dt;
-    sandVy[i] = sandVy[i] * friction + fy * dt;
+    // Inter-particle gravity — only when vibrating, capped to prevent collapse
+    if (p.gravity > 0 && energyNorm > 0.01) {
+      const gcx = Math.floor(gx / gcSz), gcy = Math.floor(gy / gcSz);
+      if (gcx >= 1 && gcx < GC - 1 && gcy >= 1 && gcy < GC - 1) {
+        const gi2 = gcy * GC + gcx;
+        let gfx = gDensGX[gi2] * p.gravity * 0.02 * energyNorm;
+        let gfy = gDensGY[gi2] * p.gravity * 0.02 * energyNorm;
+        const gfMag = Math.sqrt(gfx * gfx + gfy * gfy);
+        const gfMax = 3;
+        if (gfMag > gfMax) { gfx *= gfMax / gfMag; gfy *= gfMax / gfMag; }
+        fx += gfx;
+        fy += gfy;
+      }
+    }
 
-    // Clamp velocity
+    // Noise jitter
+    fx += (Math.random() - 0.5) * noiseStr;
+    fy += (Math.random() - 0.5) * noiseStr;
+
+    // Velocity update — direct impulse, no dt multiply
+    sandVx[i] = sandVx[i] * friction + fx * 0.06;
+    sandVy[i] = sandVy[i] * friction + fy * 0.06;
+
     const vMag = Math.sqrt(sandVx[i] * sandVx[i] + sandVy[i] * sandVy[i]);
-    const maxV = 30;
     if (vMag > maxV) {
       sandVx[i] *= maxV / vMag;
       sandVy[i] *= maxV / vMag;
     }
 
-    // Update position
+    // Position update uses dt for frame-rate independence
     sandX[i] += sandVx[i] * dt;
     sandY[i] += sandVy[i] * dt;
 
-    // Track how settled the particle is (low velocity = settled)
-    if (vMag < 0.5 && absAmp < 0.08) {
-      sandSettled[i] = Math.min(1, sandSettled[i] + dt * 3);
+    if (vMag < 1.0 && env < 0.02) {
+      sandSettled[i] = Math.min(1, sandSettled[i] + dt * 2);
     } else {
-      sandSettled[i] = Math.max(0, sandSettled[i] - dt * 5);
+      sandSettled[i] = Math.max(0, sandSettled[i] - dt * 8);
+    }
+  }
+
+  // Auto/weighted refill: respawn dead particles each frame
+  if (p.refill === 'auto' || p.refill === 'weighted') {
+    // Count dead particles
+    let deadCount = 0;
+    for (let i = 0; i < SAND_COUNT; i++) if (sandX[i] < -900) deadCount++;
+    // Respawn a batch each frame (up to 30 per frame for smooth flow)
+    const respawnPerFrame = Math.min(deadCount, 30);
+
+    if (p.refill === 'weighted' && deadCount > 0) {
+      // Build coarse 8x8 density grid to find sparse areas
+      const D = 8, cellW = (gridR * 2) / D;
+      const density = new Float32Array(D * D);
+      for (let i = 0; i < SAND_COUNT; i++) {
+        if (sandX[i] < -900) continue;
+        const cx = Math.floor((sandX[i] - (gridCx - gridR)) / cellW);
+        const cy = Math.floor((sandY[i] - (gridCy - gridR)) / cellW);
+        if (cx >= 0 && cx < D && cy >= 0 && cy < D) density[cy * D + cx]++;
+      }
+      let maxDens = 1;
+      for (let j = 0; j < D * D; j++) if (density[j] > maxDens) maxDens = density[j];
+      // Build weight array (inverse density)
+      const weights = new Float32Array(D * D);
+      let wSum = 0;
+      for (let j = 0; j < D * D; j++) {
+        const cx = (j % D + 0.5) * cellW + (gridCx - gridR) - gridCx;
+        const cy = (Math.floor(j / D) + 0.5) * cellW + (gridCy - gridR) - gridCy;
+        if (Math.sqrt(cx * cx + cy * cy) > gridR * 0.9) continue;
+        weights[j] = 1 - density[j] / maxDens + 0.1;
+        wSum += weights[j];
+      }
+      let spawned = 0;
+      for (let i = 0; i < SAND_COUNT && spawned < respawnPerFrame; i++) {
+        if (sandX[i] > -900) continue;
+        // Weighted random cell pick
+        let r = Math.random() * wSum, cell = 0;
+        for (let j = 0; j < D * D; j++) { r -= weights[j]; if (r <= 0) { cell = j; break; } }
+        const bx = (cell % D) * cellW + (gridCx - gridR);
+        const by = Math.floor(cell / D) * cellW + (gridCy - gridR);
+        sandX[i] = bx + Math.random() * cellW;
+        sandY[i] = by + Math.random() * cellW;
+        sandVx[i] = 0; sandVy[i] = 0; sandSettled[i] = 0;
+        spawned++;
+      }
+    } else if (p.refill === 'auto') {
+      let spawned = 0;
+      for (let i = 0; i < SAND_COUNT && spawned < respawnPerFrame; i++) {
+        if (sandX[i] > -900) continue;
+        const a = Math.random() * Math.PI * 2;
+        const r = Math.sqrt(Math.random()) * gridR * 0.92;
+        sandX[i] = gridCx + Math.cos(a) * r;
+        sandY[i] = gridCy + Math.sin(a) * r;
+        sandVx[i] = 0; sandVy[i] = 0; sandSettled[i] = 0;
+        spawned++;
+      }
+    }
+  }
+}
+
+function respawnDeadParticles() {
+  for (let i = 0; i < SAND_COUNT; i++) {
+    if (sandX[i] < -900) {
+      const a = Math.random() * Math.PI * 2;
+      const r = Math.sqrt(Math.random()) * gridR * 0.92;
+      sandX[i] = gridCx + Math.cos(a) * r;
+      sandY[i] = gridCy + Math.sin(a) * r;
+      sandVx[i] = 0;
+      sandVy[i] = 0;
+      sandSettled[i] = 0;
     }
   }
 }
 
 function scatterSandAtPoint(gx, gy, strength) {
-  const radius = malletSigma() * 1.5;
+  respawnDeadParticles();
+  const p = (typeof sdParams !== 'undefined') ? sdParams : { scatter: 115, edge: 'fall', refill: 'auto' };
+  const radius = malletSigma() * 2.5;
   const radius2 = radius * radius;
+  const mult = p.scatter;
   for (let i = 0; i < SAND_COUNT; i++) {
     const ddx = sandX[i] - gx, ddy = sandY[i] - gy;
     const d2 = ddx * ddx + ddy * ddy;
     if (d2 < radius2 && d2 > 0.01) {
       const dist = Math.sqrt(d2);
-      const falloff = Math.exp(-d2 / (radius2 * 0.4));
-      const pushStrength = strength * falloff * 12;
-      sandVx[i] += (ddx / dist) * pushStrength;
-      sandVy[i] += (ddy / dist) * pushStrength;
+      const falloff = Math.exp(-d2 / (radius2 * 0.35));
+      const pushStrength = strength * falloff * mult;
+      const randAngle = Math.random() * Math.PI * 2;
+      sandVx[i] += (ddx / dist) * pushStrength + Math.cos(randAngle) * pushStrength * 0.4;
+      sandVy[i] += (ddy / dist) * pushStrength + Math.sin(randAngle) * pushStrength * 0.4;
       sandSettled[i] = 0;
     }
   }
 }
 
 function disturbSandAtPoint(gx, gy, velocity) {
-  const radius = malletSigma() * 1.2;
+  respawnDeadParticles();
+  const radius = malletSigma() * 1.8;
   const radius2 = radius * radius;
-  const strength = velocity * 3;
+  const strength = velocity * 6;
   for (let i = 0; i < SAND_COUNT; i++) {
     const ddx = sandX[i] - gx, ddy = sandY[i] - gy;
     const d2 = ddx * ddx + ddy * ddy;
     if (d2 < radius2 && d2 > 0.01) {
       const dist = Math.sqrt(d2);
-      const falloff = Math.exp(-d2 / (radius2 * 0.5));
-      sandVx[i] += (ddx / dist) * strength * falloff + (Math.random() - 0.5) * strength * 0.5;
-      sandVy[i] += (ddy / dist) * strength * falloff + (Math.random() - 0.5) * strength * 0.5;
+      const falloff = Math.exp(-d2 / (radius2 * 0.45));
+      sandVx[i] += (ddx / dist) * strength * falloff + (Math.random() - 0.5) * strength * 0.7;
+      sandVy[i] += (ddy / dist) * strength * falloff + (Math.random() - 0.5) * strength * 0.7;
       sandSettled[i] = 0;
     }
   }
 }
 
-// Offscreen canvas for sand rendering
+// Offscreen canvas for sand rendering — 3x grid resolution for sharp grains
+const SAND_SCALE = 3;
+const SAND_RES = GRID * SAND_SCALE;
 const sandCanvas = document.createElement('canvas');
-sandCanvas.width = GRID;
-sandCanvas.height = GRID;
+sandCanvas.width = SAND_RES;
+sandCanvas.height = SAND_RES;
 const sandCtx = sandCanvas.getContext('2d');
-const sandImage = sandCtx.createImageData(GRID, GRID);
+const sandImage = sandCtx.createImageData(SAND_RES, SAND_RES);
+
+// Precompute scaled mask
+const sandMask = new Uint8Array(SAND_RES * SAND_RES);
+for (let y = 0; y < SAND_RES; y++) {
+  for (let x = 0; x < SAND_RES; x++) {
+    const dx = x - (SAND_RES - 1) / 2, dy = y - (SAND_RES - 1) / 2;
+    sandMask[y * SAND_RES + x] = (Math.sqrt(dx * dx + dy * dy) < gridR * SAND_SCALE) ? 1 : 0;
+  }
+}
 
 function renderSandToOffscreen() {
   const data = sandImage.data;
@@ -2053,51 +2372,91 @@ function renderSandToOffscreen() {
   else if (skin === 'nocturne') { bgR = 8; bgG = 12; bgB = 20; }
   else { bgR = 15; bgG = 12; bgB = 8; }
 
-  for (let i = 0; i < GRID * GRID; i++) {
+  const S = SAND_SCALE, SR = SAND_RES;
+  for (let i = 0; i < SR * SR; i++) {
     const pi = i * 4;
-    if (!mask[i]) { data[pi+3] = 0; continue; }
+    if (!sandMask[i]) { data[pi+3] = 0; continue; }
     data[pi] = bgR; data[pi+1] = bgG; data[pi+2] = bgB; data[pi+3] = 255;
   }
 
-  // Draw sand particles into the offscreen buffer
-  // Gold/bronze sand colors
-  const baseR = 210, baseG = 170, baseB = 80;
-  const lightR = 245, lightG = 220, lightB = 140;
+  // Build density map on grid coords
+  const DC = 28;
+  const cellSz = GRID / DC;
+  const densMap = new Float32Array(DC * DC);
+  for (let i = 0; i < SAND_COUNT; i++) {
+    if (sandX[i] < -900) continue;
+    const cx = Math.floor(sandX[i] / cellSz);
+    const cy = Math.floor(sandY[i] / cellSz);
+    if (cx >= 0 && cx < DC && cy >= 0 && cy < DC) densMap[cy * DC + cx]++;
+  }
+  const densBlur = new Float32Array(DC * DC);
+  for (let y = 0; y < DC; y++) {
+    for (let x = 0; x < DC; x++) {
+      let sum = 0, cnt = 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = x + dx, ny = y + dy;
+          if (nx >= 0 && nx < DC && ny >= 0 && ny < DC) { sum += densMap[ny * DC + nx]; cnt++; }
+        }
+      }
+      densBlur[y * DC + x] = sum / cnt;
+    }
+  }
+  let maxDens = 1;
+  for (let j = 0; j < DC * DC; j++) if (densBlur[j] > maxDens) maxDens = densBlur[j];
+
+  const baseR = 200, baseG = 160, baseB = 70;
+  const hotR = 255, hotG = 230, hotB = 120;
+  const glowR = 255, glowG = 200, glowB = 80;
 
   for (let i = 0; i < SAND_COUNT; i++) {
-    const px = Math.round(sandX[i]);
-    const py = Math.round(sandY[i]);
-    if (px < 0 || px >= GRID || py < 0 || py >= GRID) continue;
-    const gi = py * GRID + px;
-    if (!mask[gi]) continue;
+    // Scale grid coords to sand canvas coords
+    const sx = Math.round(sandX[i] * S);
+    const sy = Math.round(sandY[i] * S);
+    if (sx < 2 || sx >= SR - 2 || sy < 2 || sy >= SR - 2) continue;
+    const gi = sy * SR + sx;
+    if (!sandMask[gi]) continue;
 
-    const settled = sandSettled[i];
+    // Density from grid coords
+    const gx = sandX[i], gy = sandY[i];
+    const dcx = Math.min(DC - 1, Math.floor(gx / cellSz));
+    const dcy = Math.min(DC - 1, Math.floor(gy / cellSz));
+    const localDens = densBlur[dcy * DC + dcx] / maxDens;
+    const densAlpha = 0.55 + localDens * 0.45;
+
     const vMag = Math.sqrt(sandVx[i] * sandVx[i] + sandVy[i] * sandVy[i]);
-    const moving = Math.min(1, vMag * 0.3);
+    const speed = Math.min(1, vMag / 40);
 
-    const t = settled * 0.6 + 0.4;
-    const r = Math.floor(baseR + (lightR - baseR) * t);
-    const g = Math.floor(baseG + (lightG - baseG) * t);
-    const b = Math.floor(baseB + (lightB - baseB) * t);
-    const alpha = Math.floor((0.6 + settled * 0.3 + moving * 0.1) * 255);
-
-    const pi = gi * 4;
-    // Alpha blend over background
+    const t = speed * 0.7 + 0.3;
+    const r = Math.floor(baseR + (hotR - baseR) * t);
+    const g = Math.floor(baseG + (hotG - baseG) * t);
+    const b = Math.floor(baseB + (hotB - baseB) * t);
+    const alpha = Math.floor((0.75 + speed * 0.25) * densAlpha * sandFadeIn * 255);
     const a = alpha / 255;
-    data[pi]   = Math.floor(data[pi]   * (1-a) + r * a);
-    data[pi+1] = Math.floor(data[pi+1] * (1-a) + g * a);
-    data[pi+2] = Math.floor(data[pi+2] * (1-a) + b * a);
 
-    // Also draw to neighbor pixels for slightly larger particles when settled
-    if (settled > 0.5) {
-      const neighbors = [gi-1, gi+1, gi-GRID, gi+GRID];
-      const na = a * 0.3;
-      for (const ni of neighbors) {
-        if (ni < 0 || ni >= GRID*GRID || !mask[ni]) continue;
+    // Draw a 2x2 grain at scaled position
+    for (let dy = 0; dy < 2; dy++) {
+      for (let dx = 0; dx < 2; dx++) {
+        const ni = gi + dy * SR + dx;
+        if (ni < 0 || ni >= SR * SR || !sandMask[ni]) continue;
         const npi = ni * 4;
-        data[npi]   = Math.floor(data[npi]   * (1-na) + r * na);
-        data[npi+1] = Math.floor(data[npi+1] * (1-na) + g * na);
-        data[npi+2] = Math.floor(data[npi+2] * (1-na) + b * na);
+        data[npi]   = Math.floor(data[npi]   * (1-a) + r * a);
+        data[npi+1] = Math.floor(data[npi+1] * (1-a) + g * a);
+        data[npi+2] = Math.floor(data[npi+2] * (1-a) + b * a);
+      }
+    }
+
+    // Soft halo for moving particles
+    if (speed > 0.15) {
+      const ha = speed * 0.2 * densAlpha * sandFadeIn;
+      const halo = [gi-1, gi+SR, gi+2, gi-SR,
+                    gi-SR-1, gi-SR+2, gi+2*SR, gi+2*SR+1];
+      for (const ni of halo) {
+        if (ni < 0 || ni >= SR * SR || !sandMask[ni]) continue;
+        const npi = ni * 4;
+        data[npi]   = Math.floor(data[npi]   * (1-ha) + glowR * ha);
+        data[npi+1] = Math.floor(data[npi+1] * (1-ha) + glowG * ha);
+        data[npi+2] = Math.floor(data[npi+2] * (1-ha) + glowB * ha);
       }
     }
   }
@@ -3020,6 +3379,7 @@ function loop() {
   for (let i = 0; i < waveSteps; i++) stepWave();
 
   if (chladniMode) {
+    if (sandFadeIn < 1) sandFadeIn = Math.min(1, sandFadeIn + dt / 3);
     updateSandParticles(dt);
   }
 
@@ -3086,10 +3446,150 @@ document.getElementById('zen-toggle').addEventListener('click', () => {
 document.getElementById('chladni-toggle').addEventListener('click', () => {
   chladniMode = !chladniMode;
   document.getElementById('chladni-toggle').classList.toggle('active', chladniMode);
-  if (chladniMode) {
-    // Re-initialize particles when entering sand mode
-    initSandParticles();
+  document.getElementById('sand-gear').classList.toggle('visible', chladniMode);
+  document.getElementById('sand-reset').classList.toggle('visible', chladniMode);
+  if (!chladniMode) {
+    document.getElementById('sand-debug').classList.remove('visible');
+    document.getElementById('sand-gear').classList.remove('active');
   }
+  if (chladniMode) {
+    chladniEnvelope.fill(0);
+    initSandParticles();
+    sandFadeIn = 0;
+  }
+});
+document.getElementById('sand-reset').addEventListener('click', () => {
+  if (chladniMode) { chladniEnvelope.fill(0); initSandParticles(); sandFadeIn = 0; }
+});
+document.getElementById('sand-gear').addEventListener('click', () => {
+  const panel = document.getElementById('sand-debug');
+  const gear = document.getElementById('sand-gear');
+  const show = !panel.classList.contains('visible');
+  panel.classList.toggle('visible', show);
+  gear.classList.toggle('active', show);
+});
+</script>
+
+<div class="sand-debug" id="sand-debug">
+  <h4>Sand Tuning <span class="sd-energy" id="sd-energy">E: 0</span></h4>
+  <div class="sd-presets">
+    <span>Preset</span>
+    <button class="sd-preset-btn" data-preset="0">Default</button>
+    <button class="sd-preset-btn" data-preset="1">1</button>
+    <button class="sd-preset-btn" data-preset="2">2</button>
+    <button class="sd-preset-btn" data-preset="3">3</button>
+  </div>
+  <label>Force <input type="range" id="sd-force" min="50" max="2000" value="1240" step="10"><span class="sd-val" id="sd-force-v">1240</span></label>
+  <label>Friction <input type="range" id="sd-friction" min="85" max="100" value="94" step="1"><span class="sd-val" id="sd-friction-v">0.94</span></label>
+  <label>Bounce <input type="range" id="sd-bounce" min="0" max="800" value="650" step="10"><span class="sd-val" id="sd-bounce-v">650</span></label>
+  <label>Noise <input type="range" id="sd-noise" min="0" max="200" value="45" step="5"><span class="sd-val" id="sd-noise-v">45</span></label>
+  <label>MaxVel <input type="range" id="sd-maxv" min="50" max="500" value="200" step="10"><span class="sd-val" id="sd-maxv-v">200</span></label>
+  <label>Scatter <input type="range" id="sd-scatter" min="5" max="200" value="40" step="5"><span class="sd-val" id="sd-scatter-v">40</span></label>
+  <label>BounceHz <input type="range" id="sd-bouncehz" min="5" max="80" value="80" step="1"><span class="sd-val" id="sd-bouncehz-v">80</span></label>
+  <label>Gravity <input type="range" id="sd-gravity" min="0" max="30" value="1" step="1"><span class="sd-val" id="sd-gravity-v">0.1</span></label>
+  <div class="sd-toggles">
+    <span>Grains</span>
+    <button class="sd-btn" data-grains="3000">3k</button>
+    <button class="sd-btn active" data-grains="6000">6k</button>
+    <button class="sd-btn" data-grains="12000">12k</button>
+  </div>
+  <div class="sd-toggles">
+    <span>Edge</span>
+    <button class="sd-btn" data-edge="fall">Fall</button>
+    <button class="sd-btn active" data-edge="bounce">Bounce</button>
+  </div>
+  <div class="sd-toggles">
+    <span>Refill</span>
+    <button class="sd-btn" data-refill="touch">Touch</button>
+    <button class="sd-btn active" data-refill="auto">Auto</button>
+    <button class="sd-btn" data-refill="weighted">Weighted</button>
+  </div>
+</div>
+
+<script>
+// Sand debug panel wiring
+const sdPanel = document.getElementById('sand-debug');
+const SAND_PRESETS = [
+  { name: 'Default', force: 1110, friction: 0.92, bounce: 300, noise: 45, maxv: 50, scatter: 115, bouncehz: 40, gravity: 5, edge: 'fall', refill: 'auto' },
+  { name: '1', force: 1240, friction: 0.94, bounce: 650, noise: 45, maxv: 200, scatter: 40, bouncehz: 80, gravity: 1, edge: 'bounce', refill: 'auto' },
+  { name: '2', force: 1500, friction: 0.99, bounce: 610, noise: 30, maxv: 100, scatter: 50, bouncehz: 80, gravity: 3, edge: 'bounce', refill: 'auto' },
+  { name: '3', force: 1500, friction: 0.98, bounce: 360, noise: 30, maxv: 200, scatter: 50, bouncehz: 80, gravity: 1, edge: 'bounce', refill: 'auto' },
+];
+const sdParams = Object.assign({}, SAND_PRESETS[1]);
+delete sdParams.name;
+function sdBind(id, key, fmt) {
+  const el = document.getElementById('sd-' + id);
+  const vEl = document.getElementById('sd-' + id + '-v');
+  el.addEventListener('input', () => {
+    const raw = Number(el.value);
+    sdParams[key] = key === 'friction' ? raw / 100 : raw;
+    vEl.textContent = fmt ? fmt(sdParams[key]) : raw;
+  });
+}
+sdBind('force', 'force');
+sdBind('friction', 'friction', v => v.toFixed(2));
+sdBind('bounce', 'bounce');
+sdBind('noise', 'noise');
+sdBind('maxv', 'maxv');
+sdBind('scatter', 'scatter');
+sdBind('bouncehz', 'bouncehz');
+sdBind('gravity', 'gravity', v => (v * 0.1).toFixed(1));
+
+document.querySelectorAll('[data-grains]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-grains]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    SAND_COUNT = Number(btn.dataset.grains);
+    initSandParticles();
+    sandFadeIn = 0;
+  });
+});
+document.querySelectorAll('[data-edge]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-edge]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    sdParams.edge = btn.dataset.edge;
+  });
+});
+document.querySelectorAll('[data-refill]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-refill]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    sdParams.refill = btn.dataset.refill;
+  });
+});
+
+function loadSandPreset(idx) {
+  const p = SAND_PRESETS[idx];
+  if (!p) return;
+  const map = {
+    force: ['sd-force', v => v],
+    friction: ['sd-friction', v => Math.round(v * 100)],
+    bounce: ['sd-bounce', v => v],
+    noise: ['sd-noise', v => v],
+    maxv: ['sd-maxv', v => v],
+    scatter: ['sd-scatter', v => v],
+    bouncehz: ['sd-bouncehz', v => v],
+    gravity: ['sd-gravity', v => v],
+  };
+  const fmts = {
+    friction: v => v.toFixed(2),
+    gravity: v => (v * 0.1).toFixed(1),
+  };
+  for (const [key, [id, toSlider]] of Object.entries(map)) {
+    sdParams[key] = p[key];
+    const el = document.getElementById(id);
+    const vEl = document.getElementById(id + '-v');
+    if (el) el.value = toSlider(p[key]);
+    if (vEl) vEl.textContent = fmts[key] ? fmts[key](p[key]) : p[key];
+  }
+  sdParams.edge = p.edge;
+  sdParams.refill = p.refill;
+  document.querySelectorAll('[data-edge]').forEach(b => b.classList.toggle('active', b.dataset.edge === p.edge));
+  document.querySelectorAll('[data-refill]').forEach(b => b.classList.toggle('active', b.dataset.refill === p.refill));
+}
+document.querySelectorAll('[data-preset]').forEach(btn => {
+  btn.addEventListener('click', () => loadSandPreset(Number(btn.dataset.preset)));
 });
 </script>
 </body>
