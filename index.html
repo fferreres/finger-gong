@@ -524,6 +524,44 @@
     transition: background 0.4s ease;
   }
 
+  .start-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.5s ease;
+  }
+  .start-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .start-prompt {
+    text-align: center;
+    color: var(--bronze-light, #c8a050);
+  }
+  .start-icon {
+    font-size: 64px;
+    opacity: 0.7;
+    animation: pulse-glow 2.5s ease-in-out infinite;
+  }
+  .start-text {
+    margin-top: 16px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.8;
+  }
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 0.9; transform: scale(1.08); }
+  }
+
   .hint {
     margin-top: 20px;
     font-size: 11px;
@@ -725,6 +763,13 @@
 </style>
 </head>
 <body data-skin="hearth">
+
+<div class="start-overlay" id="start-overlay">
+  <div class="start-prompt">
+    <div class="start-icon">◉</div>
+    <div class="start-text">Tap to begin</div>
+  </div>
+</div>
 
 <button class="zen-btn" id="zen-toggle" title="Zen mode" aria-label="Toggle zen mode">✕</button>
 
@@ -2133,7 +2178,23 @@ document.querySelectorAll('.skin-btn').forEach(btn => {
 // INTERACTION — unified gesture: quick tap = strike, hold+drag = rub
 // ============================================================
 const hint = document.getElementById('hint');
+const startOverlay = document.getElementById('start-overlay');
 let firstInteraction = true;
+let audioUnlocked = false;
+
+startOverlay.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  unlockAudio();
+  audioUnlocked = true;
+  startOverlay.classList.add('hidden');
+  setTimeout(() => startOverlay.remove(), 600);
+});
+startOverlay.addEventListener('click', () => {
+  unlockAudio();
+  audioUnlocked = true;
+  startOverlay.classList.add('hidden');
+  setTimeout(() => startOverlay.remove(), 600);
+});
 let rubActive = false;
 const rubState = {
   x: 0, y: 0, prevX: 0, prevY: 0,
