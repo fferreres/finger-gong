@@ -1315,8 +1315,14 @@ function initAudio() {
   convolver.connect(reverbWet);
   reverbWet.connect(softClip);
   softClip.connect(comp);
+  const dcBlock = audioCtx.createBiquadFilter();
+  dcBlock.type = 'highpass';
+  dcBlock.frequency.value = 18;
+  dcBlock.Q.value = 0.7;
+
   comp.connect(limiter);
-  limiter.connect(analyser);
+  limiter.connect(dcBlock);
+  dcBlock.connect(analyser);
   analyser.connect(audioCtx.destination);
 }
 function resumeAudio() {
