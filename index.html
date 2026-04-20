@@ -852,16 +852,16 @@
         <div class="control">
           <div class="control-label">
             <span class="control-name">Sustain</span>
-            <span class="control-value" id="sustain-value">medium</span>
+            <span class="control-value" id="sustain-value">mute</span>
           </div>
-          <input type="range" id="sustain-slider" min="0" max="1" step="0.001" value="0.5">
+          <input type="range" id="sustain-slider" min="0" max="1" step="0.001" value="0">
         </div>
         <div class="control">
           <div class="control-label">
             <span class="control-name">Space</span>
-            <span class="control-value" id="space-value">room</span>
+            <span class="control-value" id="space-value">dry</span>
           </div>
-          <input type="range" id="space-slider" min="0" max="1" step="0.001" value="0.35">
+          <input type="range" id="space-slider" min="0" max="1" step="0.001" value="0">
         </div>
         <div class="control">
           <div class="control-label">
@@ -1136,7 +1136,7 @@ let timeData = null;
 let freqData = null;
 
 let volumeNorm = 0.7;
-let spaceNorm = 0.35;
+let spaceNorm = 0;
 let reverbSend = null;
 let reverbWet = null;
 function currentMasterGain() { return volumeNorm * volumeNorm * 0.5; }
@@ -1352,8 +1352,8 @@ const RUB_DRIVE_SCALE   = 1.4;
 const STRIKE_SCALE      = 1.7;
 const AMP_SCALE         = 0.45;
 const ENERGY_CAP        = 3.5;
-let sustainNorm = 0.5;
-function DECAY_FACTOR_MULT() { return 0.15 + sustainNorm * 0.85; }
+let sustainNorm = 0.0;
+function DECAY_FACTOR_MULT() { return 0.02 + sustainNorm * 0.98; }
 
 function updateModalBank(velocity, contactR, dt) {
   if (!modalBank) return;
@@ -2052,9 +2052,9 @@ document.getElementById('mallet-rack').addEventListener('click', (e) => {
 
 const sustainSlider = document.getElementById('sustain-slider');
 const sustainValue = document.getElementById('sustain-value');
-const sustainLabels = ['staccato', 'short', 'medium', 'long', 'infinite'];
+const sustainLabels = ['mute', 'choke', 'staccato', 'short', 'medium', 'long', 'infinite'];
 function updateSustainDisplay() {
-  const idx = Math.min(4, Math.floor(sustainNorm * 4.99));
+  const idx = Math.min(6, Math.floor(sustainNorm * 6.99));
   sustainValue.textContent = sustainLabels[idx];
 }
 sustainSlider.addEventListener('input', (e) => {
