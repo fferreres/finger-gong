@@ -1173,22 +1173,25 @@ function initAudio() {
   comp.connect(limiter);
   limiter.connect(analyser);
   analyser.connect(audioCtx.destination);
-
-  // iOS audio unlock: play a silent buffer to fully activate the context
-  const unlock = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
-  const src = audioCtx.createBufferSource();
-  src.buffer = unlock;
-  src.connect(audioCtx.destination);
-  src.start();
 }
 function resumeAudio() {
   if (audioCtx && audioCtx.state === 'suspended') {
     audioCtx.resume().then(() => { buildModalBank(); });
   }
 }
-function unlockAudio() { initAudio(); resumeAudio(); buildModalBank(); }
+function unlockAudio() {
+  initAudio(); resumeAudio(); buildModalBank();
+  if (audioCtx && audioCtx.state !== 'running') {
+    const buf = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    src.connect(audioCtx.destination);
+    src.start();
+  }
+}
 document.addEventListener('touchstart', unlockAudio, { once: false });
 document.addEventListener('click', unlockAudio, { once: false });
+document.addEventListener('pointerdown', unlockAudio, { once: false });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) resumeAudio(); });
 
 let modalBank = null;
