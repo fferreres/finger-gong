@@ -686,84 +686,79 @@
     position: fixed;
     inset: 0;
     z-index: 9999;
-    background: rgba(0, 0, 0, 0.82);
+    background: rgba(0, 0, 0, 0.65);
     display: flex;
     align-items: center;
     justify-content: center;
     -webkit-tap-highlight-color: transparent;
-    transition: opacity 0.5s ease;
+    cursor: pointer;
+    transition: opacity 1.2s ease;
   }
   .start-overlay.hidden {
     opacity: 0;
     pointer-events: none;
   }
-  .start-prompt {
+  .start-whisper {
+    position: absolute;
+    bottom: 33%;
+    left: 0;
+    right: 0;
     text-align: center;
-    color: var(--bronze-light, #c8a050);
-    max-width: 340px;
-    padding: 0 24px;
-  }
-  .start-title {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 32px;
+    font-size: 24px;
     font-weight: 300;
-    letter-spacing: 0.12em;
-    margin-bottom: 28px;
-    opacity: 0.9;
+    font-style: italic;
+    letter-spacing: 0.18em;
+    color: rgba(200, 160, 80, 0.6);
+    animation: whisperPulse 3.5s ease-in-out infinite;
+    pointer-events: none;
   }
-  .start-group {
-    margin-bottom: 20px;
+  @keyframes whisperPulse {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 0.8; }
   }
-  .start-label {
-    font-family: 'Inter', sans-serif;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.2em;
-    opacity: 0.5;
-    margin-bottom: 8px;
+  @keyframes gongBreathe {
+    0%, 100% { transform: scale(1); filter: brightness(0.45) drop-shadow(0 0 20px rgba(200, 140, 40, 0.0)); }
+    50% { transform: scale(1.02); filter: brightness(0.6) drop-shadow(0 0 40px rgba(200, 140, 40, 0.25)); }
   }
-  .start-options {
-    display: flex;
-    gap: 6px;
-    justify-content: center;
+  #gong.asleep {
+    animation: gongBreathe 4s ease-in-out infinite;
   }
-  .start-opt {
-    font-family: 'Inter', sans-serif;
-    font-size: 13px;
-    padding: 6px 12px;
-    border: 1px solid rgba(200, 160, 80, 0.25);
-    border-radius: 4px;
-    background: transparent;
-    color: rgba(200, 160, 80, 0.5);
-    cursor: pointer;
-    transition: all 0.2s ease;
+  #gong.waking {
+    animation: none;
+    filter: brightness(1);
+    transition: filter 1.2s ease;
   }
-  .start-opt.active {
-    background: rgba(200, 160, 80, 0.15);
-    border-color: rgba(200, 160, 80, 0.6);
-    color: rgb(200, 160, 80);
+  .start-overlay ~ .container header,
+  .start-overlay ~ .container .instrument-selectors,
+  .start-overlay ~ .container .controls,
+  .start-overlay ~ .container .controls-panel,
+  .start-overlay ~ .container .pitch-rack,
+  .start-overlay ~ .container .mallet-rack,
+  .start-overlay ~ .container .dampen-btn,
+  .start-overlay ~ .container .chladni-toggle,
+  .start-overlay ~ .container .sand-gear,
+  .start-overlay ~ .container .waveform-bar,
+  .start-overlay ~ .zen-btn,
+  .start-overlay ~ .info-btn,
+  .start-overlay ~ .skin-toggle {
+    opacity: 0;
+    transition: opacity 1.2s ease;
   }
-  .start-opt:hover:not(.active) {
-    color: rgba(200, 160, 80, 0.8);
-    border-color: rgba(200, 160, 80, 0.4);
-  }
-  .start-btn {
-    margin-top: 28px;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 20px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    padding: 10px 48px;
-    border: 1px solid rgba(200, 160, 80, 0.5);
-    border-radius: 6px;
-    background: rgba(200, 160, 80, 0.1);
-    color: rgb(200, 160, 80);
-    cursor: pointer;
-    transition: all 0.25s ease;
-  }
-  .start-btn:hover {
-    background: rgba(200, 160, 80, 0.2);
-    border-color: rgba(200, 160, 80, 0.7);
+  .start-overlay.hidden ~ .container header,
+  .start-overlay.hidden ~ .container .instrument-selectors,
+  .start-overlay.hidden ~ .container .controls,
+  .start-overlay.hidden ~ .container .controls-panel,
+  .start-overlay.hidden ~ .container .pitch-rack,
+  .start-overlay.hidden ~ .container .mallet-rack,
+  .start-overlay.hidden ~ .container .dampen-btn,
+  .start-overlay.hidden ~ .container .chladni-toggle,
+  .start-overlay.hidden ~ .container .sand-gear,
+  .start-overlay.hidden ~ .container .waveform-bar,
+  .start-overlay.hidden ~ .zen-btn,
+  .start-overlay.hidden ~ .info-btn,
+  .start-overlay.hidden ~ .skin-toggle {
+    opacity: 1;
   }
 
   .hint {
@@ -964,37 +959,158 @@
   @supports (-webkit-touch-callout: none) {
     body { padding-top: env(safe-area-inset-top, 24px); padding-bottom: env(safe-area-inset-bottom, 48px); }
   }
+
+  .info-btn {
+    display: none;
+  }
+  @media (orientation: portrait) and (max-width: 1100px) {
+    .info-btn {
+      display: flex;
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 100;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--bg-panel-border);
+      background: var(--control-bg);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      color: var(--text-dim);
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      font-style: italic;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.3s ease;
+      padding: 0;
+      line-height: 1;
+    }
+    .info-btn:hover { color: var(--text); }
+    .info-btn:focus { outline: none; }
+    body[data-zen="true"] .info-btn { display: none !important; }
+  }
+
+  .info-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(0, 0, 0, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  .info-panel.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .info-content {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 60px 28px 80px;
+    color: var(--bronze-light, #c8a050);
+  }
+  .info-close {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10001;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(200, 160, 80, 0.2);
+    background: rgba(0, 0, 0, 0.5);
+    color: rgba(200, 160, 80, 0.6);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .info-close:hover { color: rgba(200, 160, 80, 0.9); border-color: rgba(200, 160, 80, 0.5); }
+  .info-heading {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    margin-bottom: 32px;
+    opacity: 0.9;
+  }
+  .info-section {
+    margin-bottom: 28px;
+  }
+  .info-section-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    opacity: 0.4;
+    margin-bottom: 10px;
+  }
+  .info-section p {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-weight: 300;
+    line-height: 1.65;
+    opacity: 0.75;
+    margin: 0 0 12px;
+  }
+  .info-section em {
+    font-style: italic;
+    opacity: 1;
+    color: rgba(200, 160, 80, 0.9);
+  }
 </style>
 </head>
 <body data-skin="hearth">
 
 <div class="start-overlay" id="start-overlay">
-  <div class="start-prompt">
-    <div class="start-title">Finger Gong</div>
-    <div class="start-group">
-      <div class="start-label">Shape</div>
-      <div class="start-options" id="start-shapes">
-        <button class="start-opt active" data-shape="chau">Chau</button>
-        <button class="start-opt" data-shape="bao">Bao</button>
-        <button class="start-opt" data-shape="bell">Bell</button>
-        <button class="start-opt" data-shape="wind">Wind</button>
-        <button class="start-opt" data-shape="bowl">Bowl</button>
-      </div>
-    </div>
-    <div class="start-group">
-      <div class="start-label">Alloy</div>
-      <div class="start-options" id="start-alloys">
-        <button class="start-opt active" data-material="bronze">Bronze</button>
-        <button class="start-opt" data-material="brass">Brass</button>
-        <button class="start-opt" data-material="nickel">Nickel</button>
-        <button class="start-opt" data-material="blission">Blission</button>
-      </div>
-    </div>
-    <button class="start-btn" id="start-btn">Start</button>
-  </div>
+  <div class="start-whisper">touch to awaken</div>
 </div>
 
 <button class="zen-btn" id="zen-toggle" title="Zen mode" aria-label="Toggle zen mode">✕</button>
+<button class="info-btn" id="info-toggle" title="About" aria-label="About this instrument">i</button>
+
+<div class="info-panel" id="info-panel">
+  <button class="info-close" id="info-close" aria-label="Close">✕</button>
+  <div class="info-content">
+    <div class="info-heading">About This Instrument</div>
+
+    <div class="info-section">
+      <div class="info-section-title">The real thing</div>
+      <p>A gong isn't one sound. Strike a bronze disc and hundreds of <em>modes</em> wake up at once — inharmonic frequencies that bloom, beat against each other, and slowly fade at different rates. No two gongs are alike. Shape, thickness, and alloy determine which modes ring loudest and how long they linger.</p>
+    </div>
+
+    <div class="info-section">
+      <div class="info-section-title">Friction mallets &amp; flumies</div>
+      <p>Not all gongs are struck. <em>Flumies</em> — rubber-tipped friction mallets — are dragged across the surface. The friction excites sustained resonance, like a bow on a string or a finger on a wine glass rim. Smaller heads sing higher modes; larger ones find the deep drones. The drag gesture in this app simulates exactly this.</p>
+    </div>
+
+    <div class="info-section">
+      <div class="info-section-title">What's underneath</div>
+      <p>Every sound you hear is built from scratch — no samples. <em>14 sine oscillators</em> per voice, each tuned to a specific modal frequency, with independent amplitudes and decay rates. Two oscillators per mode with a slight detune create the natural beating. An FM noise layer adds the shimmer of real metal.</p>
+      <p>The five shapes aren't cosmetic. Each defines a unique set of partial ratios — the mathematical fingerprint that makes a <em>chau</em> sound nothing like a <em>bell</em>. The four alloys shift decay time, brightness, and noise character.</p>
+    </div>
+
+    <div class="info-section">
+      <div class="info-section-title">The sand</div>
+      <p>The Chladni visualization is computed from <em>Bessel functions</em> — the actual vibrational modes of a circular membrane. Sand particles are pushed by gradient forces away from antinodes toward nodal lines. What you see is real physics: the geometry of sound made visible.</p>
+    </div>
+
+    <div class="info-section">
+      <div class="info-section-title">The wave</div>
+      <p>Behind the gong surface, a <em>140×140 finite-difference wave simulation</em> runs in real time — a 2D physics engine computing how energy ripples across the disc after each strike. The visual shimmer on the metal is the wave field itself.</p>
+    </div>
+
+  </div>
+</div>
 
 <div class="skin-toggle" role="tablist" aria-label="Skin">
   <button class="skin-btn active" data-skin="hearth"   title="Hearth"   aria-label="Hearth skin"></button>
@@ -1013,7 +1129,7 @@
     <div class="gong-column">
 
       <div class="gong-stage">
-        <canvas id="gong" width="1000" height="1000"></canvas>
+        <canvas id="gong" class="asleep" width="1000" height="1000"></canvas>
         <div class="pitch-rack" id="pitch-rack">
           <button class="pitch-pick" data-pitch="5" title="C — octave">C'</button>
           <button class="pitch-pick" data-pitch="4" title="A">A</button>
@@ -1147,7 +1263,7 @@
 const SHAPES = {
   chau: {
     label: 'Chau',
-    pitchMult: 1.0,
+    pitchMult: 0.97,
     partials: [
       { r: 1.00, amp: 1.00, decay: 9.0 },
       { r: 1.58, amp: 0.85, decay: 8.0 },
@@ -1167,7 +1283,7 @@ const SHAPES = {
   },
   bao: {
     label: 'Bao',
-    pitchMult: 0.88,
+    pitchMult: 0.90,
     partials: [
       { r: 1.00, amp: 1.30, decay: 10.0 },
       { r: 1.98, amp: 0.60, decay: 8.0 },
@@ -1187,9 +1303,9 @@ const SHAPES = {
   },
   bell: {
     label: 'Bell',
-    pitchMult: 0.55,
+    pitchMult: 1.77,
     partials: [
-      { r: 0.50, amp: 0.80, decay: 14.0 },
+      { r: 0.50, amp: 0.45, decay: 14.0 },
       { r: 1.00, amp: 1.20, decay: 11.0 },
       { r: 1.20, amp: 0.55, decay: 8.0 },
       { r: 1.50, amp: 0.72, decay: 8.5 },
@@ -1207,12 +1323,12 @@ const SHAPES = {
   },
   wind: {
     label: 'Wind',
-    pitchMult: 1.35,
+    pitchMult: 0.79,
     partials: [
-      { r: 1.00, amp: 0.75, decay: 4.5 },
-      { r: 1.82, amp: 0.90, decay: 4.2 },
-      { r: 2.68, amp: 0.85, decay: 3.8 },
-      { r: 3.58, amp: 0.75, decay: 3.3 },
+      { r: 1.00, amp: 1.05, decay: 4.5 },
+      { r: 1.82, amp: 0.72, decay: 4.2 },
+      { r: 2.68, amp: 0.68, decay: 3.8 },
+      { r: 3.58, amp: 0.62, decay: 3.3 },
       { r: 4.60, amp: 0.70, decay: 2.9 },
       { r: 5.80, amp: 0.62, decay: 2.5 },
       { r: 7.20, amp: 0.55, decay: 2.2 },
@@ -1227,7 +1343,7 @@ const SHAPES = {
   },
   bowl: {
     label: 'Bowl',
-    pitchMult: 0.72,
+    pitchMult: 0.77,
     partials: [
       { r: 1.00, amp: 1.20, decay: 16.0 },
       { r: 2.00, amp: 0.85, decay: 14.0 },
@@ -1314,7 +1430,40 @@ let currentMaterial = 'bronze';
 
 function shape() { return SHAPES[currentShape]; }
 function material() { return MATERIALS[currentMaterial]; }
-function partials() { return shape().partials; }
+
+let sizeMorphFrom = null;
+let sizeMorphT = 1;
+const SIZE_MORPH_DURATION = 10;
+
+let matMorphFrom = null;
+let matMorphT = 1;
+const MAT_MORPH_DURATION = 4;
+
+let shapeFrom = null;
+let shapeMorphT = 1;
+const SHAPE_MORPH_DURATION = 3;
+function morphEase(t) { return t * t * (3 - 2 * t); }
+
+let _morphedPartials = null;
+let _morphedT = -1;
+function partials() {
+  if (shapeMorphT >= 1 || !shapeFrom) return shape().partials;
+  if (_morphedT === shapeMorphT) return _morphedPartials;
+  const t = morphEase(shapeMorphT);
+  const from = SHAPES[shapeFrom].partials;
+  const to = shape().partials;
+  const rScale = SHAPES[shapeFrom].pitchMult / shape().pitchMult;
+  _morphedPartials = to.map((p, i) => {
+    const rFrom = from[i].r * rScale;
+    return {
+      r: rFrom + (p.r - rFrom) * t,
+      amp: from[i].amp + (p.amp - from[i].amp) * t,
+      decay: from[i].decay + (p.decay - from[i].decay) * t,
+    };
+  });
+  _morphedT = shapeMorphT;
+  return _morphedPartials;
+}
 
 function paperWoodPalette(p) {
   function blend(c, target, t) {
@@ -1345,32 +1494,60 @@ function paperWoodPalette(p) {
 
 let _paletteCache = null;
 let _paletteCacheKey = '';
+function lerpColor(a, b, t) {
+  if (!a || !b) return b || a || [0, 0, 0];
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * t),
+    Math.round(a[1] + (b[1] - a[1]) * t),
+    Math.round(a[2] + (b[2] - a[2]) * t),
+  ];
+}
+function lerpPalette(from, to, t) {
+  const out = {};
+  for (const k in to) out[k] = lerpColor(from[k], to[k], t);
+  return out;
+}
 function activePalette() {
   const skin = document.body.getAttribute('data-skin') || 'hearth';
-  const key = currentMaterial + ':' + skin;
+  const morphing = matMorphT < 1 && matMorphFrom;
+  const key = currentMaterial + ':' + skin + (morphing ? ':' + matMorphT.toFixed(3) : '');
   if (_paletteCacheKey === key && _paletteCache) return _paletteCache;
-  const p = material().palette;
+  let p = material().palette;
+  if (morphing) {
+    const t = morphEase(matMorphT);
+    p = lerpPalette(matMorphFrom.palette, p, t);
+  }
   _paletteCache = skin === 'paper' ? paperWoodPalette(p) : p;
   _paletteCacheKey = key;
   return _paletteCache;
 }
 
 const GONG_SIZES = [
-  { label: 'XS',     inches: 14, baseFreq: 261.63, decay: 0.5, scale: 0.60 },
-  { label: 'Small',  inches: 22, baseFreq: 130.81, decay: 0.7, scale: 0.72 },
-  { label: 'Medium', inches: 34, baseFreq: 65.41,  decay: 1.0, scale: 0.88 },
-  { label: 'Large',  inches: 50, baseFreq: 32.70,  decay: 1.4, scale: 1.06 },
+  { label: 'XS',     inches: 14, baseFreq: 261.63, decay: 0.5, scale: 0.60, vol: 0.45 },
+  { label: 'Small',  inches: 22, baseFreq: 130.81, decay: 0.7, scale: 0.72, vol: 0.62 },
+  { label: 'Medium', inches: 34, baseFreq: 65.41,  decay: 1.0, scale: 0.88, vol: 0.85 },
+  { label: 'Large',  inches: 50, baseFreq: 32.70,  decay: 1.4, scale: 1.06, vol: 1.0 },
 ];
 function gongSize_()        { return GONG_SIZES[gongSizeIdx]; }
-function gongDiameterIn()   { return gongSize_().inches; }
-function gongVisualScale()  { return gongSize_().scale; }
-function gongFundamental()  { return gongSize_().baseFreq * shape().pitchMult * pitchRatio; }
-function gongDecayMult()    { return material().decayMult * gongSize_().decay; }
+function sizeLerp(key) {
+  if (sizeMorphT >= 1 || !sizeMorphFrom) return gongSize_()[key];
+  const t = morphEase(sizeMorphT);
+  return sizeMorphFrom[key] + (gongSize_()[key] - sizeMorphFrom[key]) * t;
+}
+function gongDiameterIn()   { return sizeLerp('inches'); }
+function gongVisualScale()  { return sizeLerp('scale'); }
+function gongFundamental()  { return sizeLerp('baseFreq') * shape().pitchMult * pitchRatio; }
+function matLerp(key) {
+  if (matMorphT >= 1 || !matMorphFrom) return material()[key];
+  const t = morphEase(matMorphT);
+  return matMorphFrom[key] + (material()[key] - matMorphFrom[key]) * t;
+}
+function gongDecayMult()    { return matLerp('decayMult') * sizeLerp('decay'); }
 
 function malletContactRadius() { return 0.015 + malletNorm * 0.115; }
 function malletSigma()      { return malletContactRadius() * gridR; }
-function malletNoiseMult()  { return (0.25 + (1 - malletNorm) * 1.5) * material().noiseAmpMult; }
-function malletNoiseFreq()  { return (2400 - malletNorm * 1900) * material().noiseFreqMult; }
+function malletNoiseMult()  { return (0.25 + (1 - malletNorm) * 1.5) * matLerp('noiseAmpMult'); }
+function malletNoiseFreq()  { return (2400 - malletNorm * 1900) * matLerp('noiseFreqMult'); }
 function malletPartialWeight(i, total) {
   const sigma = malletContactRadius();
   const modeN = 1 + i * 0.55;
@@ -1404,7 +1581,7 @@ let volumeNorm = 0.7;
 let spaceNorm = 0;
 let reverbSend = null;
 let reverbWet = null;
-function currentMasterGain() { return volumeNorm * volumeNorm * 0.5; }
+function currentMasterGain() { return volumeNorm * volumeNorm * 0.5 * sizeLerp('vol'); }
 
 function initAudio() {
   if (masterGain) return;
@@ -1607,13 +1784,14 @@ function retuneModalBank() {
   const now = audioCtx.currentTime;
   const fundamental = gongFundamental();
   const P = partials();
+  const tau = shapeMorphT < 1 ? 0.05 : 0.36;
   modalBank.resonators.forEach((r, i) => {
     if (i >= P.length) return;
     const p = P[i];
     const freq = Math.min(18000, fundamental * p.r);
     const detune = 0.004 + ((i * 13) % 7) * 0.0006;
-    r.osc1.frequency.setTargetAtTime(freq * (1 + detune), now, 0.36);
-    r.osc2.frequency.setTargetAtTime(freq * (1 - detune * 0.7), now, 0.36);
+    r.osc1.frequency.setTargetAtTime(freq * (1 + detune), now, tau);
+    r.osc2.frequency.setTargetAtTime(freq * (1 - detune * 0.7), now, tau);
     r.freq = freq;
     r.idx = i;
   });
@@ -1819,7 +1997,7 @@ const WAVE_STEP_DT = 1 / 240;
 let waveTimeAccum = 0;
 
 function stepWave() {
-  const baseDamping = material().waveDamping;
+  const baseDamping = matLerp('waveDamping');
   const audioDamp = Math.min(1, lastEnergy * 5);
   const damping = 0.97 + (baseDamping - 0.97) * audioDamp;
   for (let y = 1; y < GRID - 1; y++) {
@@ -1888,7 +2066,7 @@ function computeModalViz() {
 // CHLADNI SAND PARTICLE SYSTEM
 // ============================================================
 let chladniMode = false;
-const SAND_MAX = 12000;
+const SAND_MAX = 16000;
 let SAND_COUNT = 6000;
 const sandX = new Float32Array(SAND_MAX);
 const sandY = new Float32Array(SAND_MAX);
@@ -3008,9 +3186,22 @@ function updateMalletDisplay() {
   });
 }
 gongSlider.addEventListener('input', (e) => {
-  gongSizeIdx = parseInt(e.target.value);
+  const newIdx = parseInt(e.target.value);
+  if (newIdx === gongSizeIdx) return;
+  sizeMorphFrom = {
+    inches: sizeLerp('inches'),
+    baseFreq: sizeLerp('baseFreq'),
+    decay: sizeLerp('decay'),
+    scale: sizeLerp('scale'),
+    vol: sizeLerp('vol'),
+  };
+  gongSizeIdx = newIdx;
+  sizeMorphT = 0;
   updateGongDisplay();
   retuneModalBank();
+  if (masterGain && audioCtx) {
+    masterGain.gain.setTargetAtTime(currentMasterGain(), audioCtx.currentTime, 0.05);
+  }
 });
 malletSlider.addEventListener('input', (e) => {
   malletNorm = parseFloat(e.target.value);
@@ -3120,7 +3311,10 @@ document.querySelectorAll('#shape-buttons .selector-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const v = btn.dataset.shape;
     if (v === currentShape) return;
+    shapeFrom = currentShape;
     currentShape = v;
+    shapeMorphT = 0;
+    _morphedT = -1;
     document.querySelectorAll('#shape-buttons .selector-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.shape === currentShape));
     retuneModalBank();
@@ -3130,7 +3324,19 @@ document.querySelectorAll('#material-buttons .selector-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const v = btn.dataset.material;
     if (v === currentMaterial) return;
+    const curPal = activePalette();
+    const palCopy = {};
+    for (const k in curPal) palCopy[k] = curPal[k].slice();
+    matMorphFrom = {
+      decayMult: matLerp('decayMult'),
+      noiseFreqMult: matLerp('noiseFreqMult'),
+      noiseAmpMult: matLerp('noiseAmpMult'),
+      waveDamping: matLerp('waveDamping'),
+      palette: palCopy,
+    };
     currentMaterial = v;
+    matMorphT = 0;
+    _paletteCacheKey = '';
     document.querySelectorAll('#material-buttons .selector-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.material === currentMaterial));
     retuneModalBank();
@@ -3152,6 +3358,20 @@ document.querySelectorAll('.skin-btn').forEach(btn => {
 });
 
 // ============================================================
+// INFO PANEL
+// ============================================================
+const infoPanel = document.getElementById('info-panel');
+document.getElementById('info-toggle').addEventListener('click', () => {
+  infoPanel.classList.add('open');
+});
+document.getElementById('info-close').addEventListener('click', () => {
+  infoPanel.classList.remove('open');
+});
+infoPanel.addEventListener('click', (e) => {
+  if (e.target === infoPanel) infoPanel.classList.remove('open');
+});
+
+// ============================================================
 // INTERACTION — unified gesture: quick tap = strike, hold+drag = rub
 // ============================================================
 const hint = document.getElementById('hint');
@@ -3159,37 +3379,22 @@ const startOverlay = document.getElementById('start-overlay');
 let firstInteraction = true;
 let audioUnlocked = false;
 
-document.getElementById('start-shapes').addEventListener('click', (e) => {
-  const btn = e.target.closest('.start-opt');
-  if (!btn) return;
-  currentShape = btn.dataset.shape;
-  document.querySelectorAll('#start-shapes .start-opt').forEach(b =>
-    b.classList.toggle('active', b.dataset.shape === currentShape));
-  document.querySelectorAll('#shape-buttons .selector-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.shape === currentShape));
-});
-document.getElementById('start-alloys').addEventListener('click', (e) => {
-  const btn = e.target.closest('.start-opt');
-  if (!btn) return;
-  currentMaterial = btn.dataset.material;
-  document.querySelectorAll('#start-alloys .start-opt').forEach(b =>
-    b.classList.toggle('active', b.dataset.material === currentMaterial));
-  document.querySelectorAll('#material-buttons .selector-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset.material === currentMaterial));
-});
 
 function dismissStart() {
   unlockAudio();
   audioUnlocked = true;
   startOverlay.classList.add('hidden');
-  setTimeout(() => startOverlay.remove(), 600);
+  const gc = document.getElementById('gong');
+  gc.classList.remove('asleep');
+  gc.classList.add('waking');
+  setTimeout(() => { gc.classList.remove('waking'); startOverlay.remove(); }, 1400);
   retuneModalBank();
 }
-document.getElementById('start-btn').addEventListener('touchend', (e) => {
+startOverlay.addEventListener('touchend', (e) => {
   e.preventDefault();
   dismissStart();
 });
-document.getElementById('start-btn').addEventListener('click', dismissStart);
+startOverlay.addEventListener('click', dismissStart);
 let rubActive = false;
 const rubState = {
   x: 0, y: 0, prevX: 0, prevY: 0,
@@ -3367,6 +3572,7 @@ gongCanvas.addEventListener('pointerleave', (e) => {
 // ============================================================
 let lastLoopT = performance.now();
 function loop() {
+  try {
   if (modalBank && !modalBank.startedRunning) ensureModalBankLive();
   const now = performance.now();
   const dt = Math.min(0.1, (now - lastLoopT) / 1000);
@@ -3377,6 +3583,24 @@ function loop() {
   waveTimeAccum -= waveSteps * WAVE_STEP_DT;
   computeModalViz();
   for (let i = 0; i < waveSteps; i++) stepWave();
+
+  if (shapeMorphT < 1) {
+    shapeMorphT = Math.min(1, shapeMorphT + dt / SHAPE_MORPH_DURATION);
+    retuneModalBank();
+  }
+
+  if (sizeMorphT < 1) {
+    sizeMorphT = Math.min(1, sizeMorphT + dt / SIZE_MORPH_DURATION);
+    retuneModalBank();
+    if (masterGain && audioCtx) {
+      masterGain.gain.setTargetAtTime(currentMasterGain(), audioCtx.currentTime, 0.02);
+    }
+  }
+
+  if (matMorphT < 1) {
+    matMorphT = Math.min(1, matMorphT + dt / MAT_MORPH_DURATION);
+    _paletteCacheKey = '';
+  }
 
   if (chladniMode) {
     if (sandFadeIn < 1) sandFadeIn = Math.min(1, sandFadeIn + dt / 3);
@@ -3428,6 +3652,7 @@ function loop() {
   drawWaveform();
   drawSpectrogram();
   drawRadial();
+  } catch (e) { console.error('loop error:', e); }
   requestAnimationFrame(loop);
 }
 
@@ -3489,9 +3714,9 @@ document.getElementById('sand-gear').addEventListener('click', () => {
   <label>Gravity <input type="range" id="sd-gravity" min="0" max="30" value="1" step="1"><span class="sd-val" id="sd-gravity-v">0.1</span></label>
   <div class="sd-toggles">
     <span>Grains</span>
-    <button class="sd-btn" data-grains="3000">3k</button>
     <button class="sd-btn active" data-grains="6000">6k</button>
     <button class="sd-btn" data-grains="12000">12k</button>
+    <button class="sd-btn" data-grains="16000">16k</button>
   </div>
   <div class="sd-toggles">
     <span>Edge</span>
