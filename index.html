@@ -291,7 +291,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 22px;
     color: var(--text-dim);
     transition: all 0.3s ease;
     touch-action: manipulation;
@@ -709,7 +709,7 @@
     color: var(--text-faint);
     font-style: normal;
     font-size: 11px;
-    margin-left: 2px;
+    margin-left: 4px;
     font-family: 'Inter', sans-serif;
   }
 
@@ -1234,7 +1234,7 @@
 <body data-skin="hearth">
 
 <div class="start-overlay" id="start-overlay">
-  <div class="start-whisper">touch to awaken</div>
+  <div class="start-whisper">Touch to Awaken</div>
 </div>
 
 <button class="info-btn" id="info-toggle" title="About" aria-label="About this instrument">i</button>
@@ -1303,7 +1303,7 @@
         <button class="sand-gear" id="sand-gear" title="Sand tuning">&#9881;</button>
         <button class="sand-gear sand-reset" id="sand-reset" title="Reset sand">&#8635;</button>
         <div class="rec-transport" id="rec-transport">
-          <button class="zen-btn" id="zen-toggle" title="Zen mode" aria-label="Toggle zen mode">—</button>
+          <button class="zen-btn" id="zen-toggle" title="Zen mode" aria-label="Toggle zen mode">⌄</button>
           <div class="rec-divider"></div>
           <button class="dampen-btn" id="dampen-btn" title="Hold to dampen">◎</button>
           <div class="rec-divider"></div>
@@ -1313,11 +1313,11 @@
           <button class="rec-btn" id="rec-loop" title="Loop" aria-label="Toggle loop">&#10227;</button>
         </div>
         <div class="mallet-rack" id="mallet-rack">
-          <button class="mallet-pick" data-size="0" data-mallet="0" title="Wooden stick"></button>
+          <button class="mallet-pick" data-size="0" data-mallet="0" title="Wooden Stick"></button>
           <button class="mallet-pick" data-size="1" data-mallet="1" title="Light felt"></button>
-          <button class="mallet-pick active" data-size="2" data-mallet="2" title="Medium felt"></button>
+          <button class="mallet-pick active" data-size="2" data-mallet="2" title="Medium Felt"></button>
           <button class="mallet-pick" data-size="3" data-mallet="3" title="Heavy felt"></button>
-          <button class="mallet-pick" data-size="4" data-mallet="4" title="Soft beater"></button>
+          <button class="mallet-pick" data-size="4" data-mallet="4" title="Soft Beater"></button>
         </div>
       </div>
 
@@ -1357,7 +1357,7 @@
         <div class="control">
           <div class="control-label">
             <span class="control-name">Mallet</span>
-            <span class="control-value" id="mallet-value">medium felt</span>
+            <span class="control-value" id="mallet-value">Medium Felt</span>
           </div>
           <input type="range" id="mallet-slider" min="0" max="1" step="0.001" value="0.5">
         </div>
@@ -1741,7 +1741,7 @@ function rgbHex(c) {
 // AUDIO — MODAL SYNTHESIS
 // ============================================================
 // Create AudioContext at page load so resume() only needs to unlock it
-let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'playback' });
 let masterGain = null;
 let analyser = null;
 let timeData = null;
@@ -1759,20 +1759,27 @@ function initAudio() {
   masterGain.gain.value = currentMasterGain();
 
   const softClip = audioCtx.createWaveShaper();
-  const sc = new Float32Array(4096);
-  for (let i = 0; i < 4096; i++) {
-    const x = (i / 2048) - 1;
-    sc[i] = Math.tanh(x * 1.6);
+  const sc = new Float32Array(8192);
+  for (let i = 0; i < 8192; i++) {
+    const x = (i / 4096) - 1;
+    const ax = Math.abs(x);
+    if (ax < 0.85) {
+      sc[i] = x;
+    } else {
+      const over = (ax - 0.85) / 0.15;
+      const knee = 0.85 + 0.15 * (1 - Math.exp(-over * 1.5)) / (1 - Math.exp(-1.5));
+      sc[i] = x > 0 ? knee : -knee;
+    }
   }
   softClip.curve = sc;
-  softClip.oversample = '2x';
+  softClip.oversample = '4x';
 
   const comp = audioCtx.createDynamicsCompressor();
-  comp.threshold.value = -24;
-  comp.knee.value = 12;
-  comp.ratio.value = 6;
-  comp.attack.value = 0.002;
-  comp.release.value = 0.18;
+  comp.threshold.value = -12;
+  comp.knee.value = 10;
+  comp.ratio.value = 4;
+  comp.attack.value = 0.003;
+  comp.release.value = 0.25;
 
   const limiter = audioCtx.createDynamicsCompressor();
   limiter.threshold.value = -2;
@@ -1971,6 +1978,8 @@ const RUB_DRIVE_SCALE   = 1.4;
 const STRIKE_SCALE      = 1.7;
 const AMP_SCALE         = 0.4275;
 const ENERGY_CAP        = 3.5;
+const ENERGY_NORM_K     = 0.22;
+function energyNorm(totalE) { return 1 / Math.sqrt(1 + totalE * ENERGY_NORM_K); }
 let sustainNorm = 0.5;
 function DECAY_FACTOR_MULT() { return 0.02 + sustainNorm * 0.78; }
 
@@ -1980,6 +1989,8 @@ function updateModalBank(velocity, contactR, dt) {
   const P = partials();
   const decayMult = gongDecayMult();
   const me = 1.10 - malletNorm * 0.25;
+  const totalE = modalBank.resonators.reduce((s, r) => s + r.energy, 0);
+  const norm = energyNorm(totalE);
 
   const vmag = Math.sqrt(rubState.vx * rubState.vx + rubState.vy * rubState.vy);
   let radialComp = 0, tangComp = 0;
@@ -2028,11 +2039,14 @@ function updateModalBank(velocity, contactR, dt) {
     if (r.energy > ENERGY_CAP) r.energy = ENERGY_CAP;
     if (r.energy < 1e-6)       r.energy = 0;
 
-    const amp = r.energy * AMP_SCALE;
+    const amp = r.energy * AMP_SCALE * norm;
+    r.modGain.gain.cancelScheduledValues(now);
     r.modGain.gain.setTargetAtTime(amp, now, 0.03);
 
     const wobble = r.freq * 0.0028 * Math.sqrt(r.energy);
+    r.fmDepth1.gain.cancelScheduledValues(now);
     r.fmDepth1.gain.setTargetAtTime(wobble, now, 0.08);
+    r.fmDepth2.gain.cancelScheduledValues(now);
     r.fmDepth2.gain.setTargetAtTime(wobble * 0.7, now, 0.08);
   });
 
@@ -2064,9 +2078,11 @@ function strike(strikeR, strikeTheta, force) {
 
   const totalE = modalBank.resonators.reduce((s, r) => s + r.energy, 0);
   const duckAmt = 1 - STRIKE_DUCK * Math.min(1, totalE / 4);
+  const preNorm = energyNorm(totalE);
   modalBank.resonators.forEach(r => {
     r.energy *= duckAmt;
-    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE, now, 0.012);
+    r.modGain.gain.cancelScheduledValues(now);
+    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE * preNorm, now, 0.012);
   });
 
   const strikeJitter = 0.015 * (Math.random() - 0.5);
@@ -2091,12 +2107,16 @@ function strike(strikeR, strikeTheta, force) {
     const vary = 0.88 + Math.random() * 0.24;
     const deposit = p.amp * locWeight * mWeight * me * STRIKE_SCALE * vary;
     r.energy = Math.min(ENERGY_CAP, r.energy + deposit);
-    r.modGain.gain.cancelScheduledValues(now);
-    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE * STRIKE_TRANSIENT, now, 0.003);
-    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE, now + 0.012, STRIKE_TRANSIENT_TAU);
   });
 
-  // Nonlinear pitch bend — hard strikes push pitch down, recovers over ~1s
+  const postTotalE = modalBank.resonators.reduce((s, r) => s + r.energy, 0);
+  const postNorm = energyNorm(postTotalE);
+  modalBank.resonators.forEach((r) => {
+    r.modGain.gain.cancelScheduledValues(now);
+    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE * postNorm * STRIKE_TRANSIENT, now, 0.003);
+    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE * postNorm, now + 0.012, STRIKE_TRANSIENT_TAU);
+  });
+
   modalBank.resonators.forEach((r, i) => {
     if (r.energy < 0.05) return;
     const bendDepth = Math.min(0.035, r.energy * 0.012) / (1 + i * 0.3);
@@ -2106,10 +2126,10 @@ function strike(strikeR, strikeTheta, force) {
     const f2 = r.freq * (1 - detune * 0.7);
     r.osc1.frequency.cancelScheduledValues(now);
     r.osc2.frequency.cancelScheduledValues(now);
-    r.osc1.frequency.setValueAtTime(f1 * (1 - bendDepth), now);
-    r.osc2.frequency.setValueAtTime(f2 * (1 - bendDepth), now);
-    r.osc1.frequency.setTargetAtTime(f1, now, 0.6);
-    r.osc2.frequency.setTargetAtTime(f2, now, 0.6);
+    r.osc1.frequency.setTargetAtTime(f1 * (1 - bendDepth), now, 0.002);
+    r.osc2.frequency.setTargetAtTime(f2 * (1 - bendDepth), now, 0.002);
+    r.osc1.frequency.setTargetAtTime(f1, now + 0.005, 0.6);
+    r.osc2.frequency.setTargetAtTime(f2, now + 0.005, 0.6);
   });
 
   const nLen = Math.floor(audioCtx.sampleRate * 0.15);
@@ -2123,13 +2143,13 @@ function strike(strikeR, strikeTheta, force) {
   nf.frequency.value = malletNoiseFreq() + strikeR * 1500;
   nf.Q.value = 1.2;
   const ng = audioCtx.createGain();
-  const totalEnergy = modalBank.resonators.reduce((s, r) => s + r.energy, 0);
-  const noiseScale = 1 / (1 + totalEnergy * 0.3);
+  const noiseScale = 1 / (1 + postTotalE * 0.3);
   const noiseAmp = (0.06 + strikeR * 0.18) * malletNoiseMult() * noiseScale;
   ng.gain.setValueAtTime(noiseAmp, now);
   ng.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
   noise.connect(nf); nf.connect(ng); ng.connect(masterGain);
   noise.start(now); noise.stop(now + 0.3);
+  noise.onended = () => { ng.disconnect(); nf.disconnect(); };
 }
 
 function coupleModesStep(dt) {
@@ -3533,7 +3553,7 @@ const malletSlider = document.getElementById('mallet-slider');
 const gongValue = document.getElementById('gong-value');
 const malletValue = document.getElementById('mallet-value');
 
-const MALLET_LABELS = ['wooden stick', 'light felt', 'medium felt', 'heavy felt', 'soft beater'];
+const MALLET_LABELS = ['Wooden Stick', 'Light Felt', 'Medium Felt', 'Heavy Felt', 'Soft Beater'];
 function malletLabel(v) {
   const idx = Math.min(MALLET_LABELS.length - 1, Math.floor(v * MALLET_LABELS.length));
   return MALLET_LABELS[idx];
@@ -4046,7 +4066,12 @@ function loop() {
       modalBank.resonators.forEach(r => {
         r.energy *= factor;
         if (r.energy < 1e-6) r.energy = 0;
-        r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE, dampNow, 0.01);
+      });
+      const dampTotalE = modalBank.resonators.reduce((s, r) => s + r.energy, 0);
+      const dampNorm = energyNorm(dampTotalE);
+      modalBank.resonators.forEach(r => {
+        r.modGain.gain.cancelScheduledValues(dampNow);
+        r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE * dampNorm, dampNow, 0.01);
       });
       for (let i = 0; i < GRID * GRID; i++) {
         u[i] *= factor; uPrev[i] *= factor;
@@ -4128,13 +4153,13 @@ loop();
   function enterImmersion() {
     document.body.dataset.immersion = 'true';
     document.body.dataset.zen = 'true';
-    zenBtn.textContent = '○';
+    zenBtn.textContent = '⌃';
     setTimeout(resizeAll, 80);
   }
 
   function exitImmersion() {
     document.body.classList.add('immersion-exit-hint');
-    zenBtn.textContent = '○';
+    zenBtn.textContent = '⌃';
     setTimeout(() => {
       document.body.removeAttribute('data-immersion');
       document.body.classList.remove('immersion-exit-hint');
@@ -4158,7 +4183,7 @@ loop();
     if (document.body.dataset.immersion === 'true') return;
     const zen = document.body.dataset.zen !== 'true';
     document.body.dataset.zen = zen;
-    zenBtn.textContent = zen ? '○' : '—';
+    zenBtn.textContent = zen ? '⌃' : '⌄';
     setTimeout(resizeAll, 50);
   }
 
