@@ -401,6 +401,7 @@
   .mode-toggle.hinting { animation: sandHint 2.5s ease-in-out; }
 
   .tuning-toggle {
+    position: relative;
     height: 22px;
     border: 1px solid var(--bg-panel-border);
     background: var(--control-bg);
@@ -1466,8 +1467,13 @@
         </div>
         <div class="control">
           <div class="control-label">
-            <span class="control-name">Mallet</span>
+            <span class="control-name" id="mallet-control-name">Mallet</span>
             <span class="control-value" id="mallet-value">Medium Felt</span>
+          </div>
+          <div class="tuning-toggle" id="mallet-toggle" style="margin-bottom:4px">
+            <div class="tuning-toggle-slider" id="mallet-toggle-slider"></div>
+            <button class="tuning-toggle-option active" data-mmode="mallet">Mallet</button>
+            <button class="tuning-toggle-option" data-mmode="flumie">Flumie</button>
           </div>
           <input type="range" id="mallet-slider" min="0" max="1" step="0.001" value="0.5">
         </div>
@@ -1705,6 +1711,7 @@ let cachedSkin = 'hearth';
 let gongSizeIdx = 2;
 let pitchRatio = 2;
 let malletNorm = 0.5;
+let flumieMode = false;
 let interactionMode = 'strike';
 let currentShape = 'chau';
 let currentMaterial = 'bronze';
@@ -1829,10 +1836,19 @@ function matLerp(key) {
 }
 function gongDecayMult()    { return matLerp('decayMult') * sizeLerp('decay'); }
 
-function malletContactRadius() { return 0.015 + malletNorm * 0.115; }
+function malletContactRadius() {
+  if (flumieMode) return 0.06 + malletNorm * 0.09;
+  return 0.015 + malletNorm * 0.115;
+}
 function malletSigma()      { return malletContactRadius() * gridR; }
-function malletNoiseMult()  { return (0.25 + (1 - malletNorm) * 1.5) * matLerp('noiseAmpMult'); }
-function malletNoiseFreq()  { return (2400 - malletNorm * 1900) * matLerp('noiseFreqMult'); }
+function malletNoiseMult()  {
+  const base = flumieMode ? (0.08 + (1 - malletNorm) * 0.4) : (0.25 + (1 - malletNorm) * 1.5);
+  return base * matLerp('noiseAmpMult');
+}
+function malletNoiseFreq()  {
+  if (flumieMode) return (1200 - malletNorm * 800) * matLerp('noiseFreqMult');
+  return (2400 - malletNorm * 1900) * matLerp('noiseFreqMult');
+}
 function malletPartialWeight(i, total) {
   const sigma = malletContactRadius();
   const modeN = 1 + i * 0.55;
@@ -2107,6 +2123,10 @@ function updateModalBank(velocity, contactR, dt) {
 
   const theta = Math.atan2(rubState.gy - gridCy, rubState.gx - gridCx);
 
+  const flumieSpeedPeak = flumieMode ? Math.min(13, velocity * 10) : 0;
+  const flumieSigma = 2.0 + malletNorm * 1.5;
+  const flumieGrip = flumieMode ? (0.4 + malletNorm * 0.6) : 0;
+
   modalBank.resonators.forEach((r, i) => {
     if (i >= P.length) return;
     const p = P[i];
@@ -2134,11 +2154,27 @@ function updateModalBank(velocity, contactR, dt) {
     const pressureExp = 1.5 - 1.2 * partialPos;
     const pressureWeight = Math.pow(rubState.pressure, pressureExp);
 
-    const tau = Math.max(0.15, p.decay * decayMult * DECAY_FACTOR_MULT());
-    const decayFactor = Math.exp(-dt / tau);
-    const drive = p.amp * velocity * coupling * dirFactor * mWeight
-                * pressureWeight * me * rubState.contactForce * RUB_DRIVE_SCALE * dt;
-    r.energy = r.energy * decayFactor + drive;
+    let tau = Math.max(0.15, p.decay * decayMult * DECAY_FACTOR_MULT());
+
+    if (flumieMode && velocity > 0.02) {
+      const dist = (i - flumieSpeedPeak) / flumieSigma;
+      const velocityMatch = Math.exp(-0.5 * dist * dist);
+      const saturation = 1 / (1 + r.energy * 0.8);
+      const frictionStrength = velocityMatch * coupling * rubState.pressure
+                             * flumieGrip * saturation * 1.8;
+      const dampReduction = Math.min(0.93, frictionStrength);
+      tau = tau / Math.max(0.07, 1 - dampReduction);
+
+      const seed = p.amp * velocity * coupling * velocityMatch * rubState.pressure
+                 * flumieGrip * 0.15 * dt;
+      const decayFactor = Math.exp(-dt / tau);
+      r.energy = r.energy * decayFactor + seed;
+    } else {
+      const decayFactor = Math.exp(-dt / tau);
+      const drive = p.amp * velocity * coupling * dirFactor * mWeight
+                  * pressureWeight * me * rubState.contactForce * RUB_DRIVE_SCALE * dt;
+      r.energy = r.energy * decayFactor + drive;
+    }
     if (r.energy > ENERGY_CAP) r.energy = ENERGY_CAP;
     if (r.energy < 1e-6)       r.energy = 0;
 
@@ -2146,13 +2182,15 @@ function updateModalBank(velocity, contactR, dt) {
     r.modGain.gain.cancelScheduledValues(now);
     r.modGain.gain.setTargetAtTime(amp, now, 0.03);
 
-    const wobble = r.freq * 0.0028 * Math.sqrt(r.energy);
+    const wobbleScale = flumieMode ? 0.0008 : 0.0028;
+    const wobble = r.freq * wobbleScale * Math.sqrt(r.energy);
     r.fmDepth1.gain.cancelScheduledValues(now);
     r.fmDepth1.gain.setTargetAtTime(wobble, now, 0.08);
     r.fmDepth2.gain.cancelScheduledValues(now);
     r.fmDepth2.gain.setTargetAtTime(wobble * 0.7, now, 0.08);
   });
 
+  if (flumieMode) return;
   const eventRate = velocity * (0.25 - malletNorm * 0.17);
   const maxModeIdx = Math.max(2, Math.ceil(P.length - malletNorm * (P.length - 3)));
   if (velocity > 0.08 && rubState.pressure > 0.05 &&
@@ -2211,15 +2249,19 @@ function strike(strikeR, strikeTheta, force) {
     r.energy = Math.min(ENERGY_CAP, r.energy + deposit);
   });
 
+  const sTransient = flumieMode ? 1.03 : STRIKE_TRANSIENT;
+  const sAttack = flumieMode ? 0.012 : 0.003;
+  const sTau = flumieMode ? 0.08 : STRIKE_TRANSIENT_TAU;
   modalBank.resonators.forEach((r) => {
     r.modGain.gain.cancelScheduledValues(now);
-    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE * STRIKE_TRANSIENT, now, 0.003);
-    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE, now + 0.012, STRIKE_TRANSIENT_TAU);
+    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE * sTransient, now, sAttack);
+    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE, now + 0.02, sTau);
   });
 
+  const bendScale = flumieMode ? 0.25 : 1;
   modalBank.resonators.forEach((r, i) => {
     if (r.energy < 0.05) return;
-    const bendDepth = Math.min(0.035, r.energy * 0.012) / (1 + i * 0.3);
+    const bendDepth = Math.min(0.035, r.energy * 0.012) / (1 + i * 0.3) * bendScale;
     if (bendDepth < 0.0005) return;
     const detune = 0.004 + ((i * 13) % 7) * 0.0006;
     const f1 = r.freq * (1 + detune);
@@ -3681,9 +3723,11 @@ const gongValue = document.getElementById('gong-value');
 const malletValue = document.getElementById('mallet-value');
 
 const MALLET_LABELS = ['Wooden Stick', 'Light Felt', 'Medium Felt', 'Heavy Felt', 'Soft Beater'];
+const FLUMIE_LABELS = ['Small Rubber', 'Medium Rubber', 'Large Rubber', 'Suede Pad', 'Sheepskin'];
 function malletLabel(v) {
-  const idx = Math.min(MALLET_LABELS.length - 1, Math.floor(v * MALLET_LABELS.length));
-  return MALLET_LABELS[idx];
+  const labels = flumieMode ? FLUMIE_LABELS : MALLET_LABELS;
+  const idx = Math.min(labels.length - 1, Math.floor(v * labels.length));
+  return labels[idx];
 }
 function updateGongDisplay() {
   const s = gongSize_();
@@ -3693,9 +3737,29 @@ function updateGongDisplay() {
 function updateMalletDisplay() {
   malletValue.textContent = malletLabel(malletNorm);
   const idx = Math.min(4, Math.floor(malletNorm * 5));
+  const labels = flumieMode ? FLUMIE_LABELS : MALLET_LABELS;
   document.querySelectorAll('.mallet-pick').forEach((btn, i) => {
     btn.classList.toggle('active', i === idx);
+    btn.title = labels[i];
   });
+  document.getElementById('mallet-control-name').textContent = flumieMode ? 'Flumie' : 'Mallet';
+}
+function updateMalletToggle() {
+  const toggle = document.getElementById('mallet-toggle');
+  const opts = toggle.querySelectorAll('.tuning-toggle-option');
+  const slider = document.getElementById('mallet-toggle-slider');
+  opts.forEach(o => o.classList.toggle('active', flumieMode ? o.dataset.mmode === 'flumie' : o.dataset.mmode === 'mallet'));
+  const activeOpt = toggle.querySelector('.tuning-toggle-option.active');
+  if (activeOpt && slider) {
+    slider.style.left = activeOpt.offsetLeft + 'px';
+    slider.style.width = activeOpt.offsetWidth + 'px';
+  }
+}
+function setFlumieMode(enabled) {
+  flumieMode = enabled;
+  updateMalletToggle();
+  updateMalletDisplay();
+  recPushEvent({ type: 'control', key: 'flumieMode', value: enabled });
 }
 gongSlider.addEventListener('input', (e) => {
   if (healingMode) return;
@@ -3734,6 +3798,15 @@ document.getElementById('mallet-rack').addEventListener('click', (e) => {
   updateMalletDisplay();
   recPushEvent({ type: 'control', key: 'mallet', value: malletNorm });
 });
+
+document.getElementById('mallet-toggle').addEventListener('click', (e) => {
+  const opt = e.target.closest('.tuning-toggle-option');
+  if (!opt) return;
+  const wantFlumie = opt.dataset.mmode === 'flumie';
+  if (wantFlumie === flumieMode) return;
+  setFlumieMode(wantFlumie);
+});
+requestAnimationFrame(() => updateMalletToggle());
 
 const sustainSlider = document.getElementById('sustain-slider');
 const sustainValue = document.getElementById('sustain-value');
@@ -4635,7 +4708,7 @@ function recCaptureSnapshot() {
   return {
     currentShape, currentMaterial, gongSizeIdx, currentPitchIdx,
     pitchRatio, malletNorm, sustainNorm, spaceNorm, volumeNorm, chladniMode,
-    healingMode, currentHealingIdx,
+    healingMode, currentHealingIdx, flumieMode,
   };
 }
 
@@ -4723,6 +4796,7 @@ function recRestoreSnapshot(snap) {
     updatePitchRack();
     retuneModalBank();
   }
+  if (snap.flumieMode !== undefined && snap.flumieMode !== flumieMode) setFlumieMode(snap.flumieMode);
   malletNorm = snap.malletNorm; malletSlider.value = malletNorm; updateMalletDisplay();
   sustainNorm = snap.sustainNorm; sustainSlider.value = sustainNorm; updateSustainDisplay();
   spaceNorm = snap.spaceNorm; spaceSlider.value = spaceNorm; updateSpaceDisplay();
@@ -4834,6 +4908,9 @@ function recApplyControl(key, value) {
     }
     case 'mallet':
       malletNorm = value; malletSlider.value = malletNorm; updateMalletDisplay();
+      break;
+    case 'flumieMode':
+      if (value !== flumieMode) setFlumieMode(value);
       break;
     case 'sustain':
       sustainNorm = value; sustainSlider.value = sustainNorm; updateSustainDisplay();
