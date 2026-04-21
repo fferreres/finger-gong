@@ -3131,10 +3131,11 @@ function drawShapeCenter(cx, cy, R, discR, glow) {
   const mat = activePalette();
   const v = shapeVisLerped();
   const activeRings = v.rings.filter(r => r > 0.01);
+  const parentAlpha = gctx.globalAlpha;
   if (v.cavity > 0.01) {
-    gctx.globalAlpha = v.cavity;
+    gctx.globalAlpha = parentAlpha * v.cavity;
     drawBellCavity(cx, cy, R, discR, glow, mat);
-    gctx.globalAlpha = 1;
+    gctx.globalAlpha = parentAlpha;
   }
   if (v.bossR > 0.005) {
     drawBoss(cx, cy, R * v.bossR, glow, mat, v.bossH);
