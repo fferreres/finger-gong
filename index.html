@@ -3799,9 +3799,11 @@ let firstInteraction = true;
 let audioUnlocked = false;
 
 
+let _dismissedAt = 0;
 function dismissStart() {
   unlockAudio();
   audioUnlocked = true;
+  _dismissedAt = performance.now();
   startOverlay.classList.add('hidden');
   const gc = document.getElementById('gong');
   gc.classList.remove('asleep');
@@ -3938,6 +3940,7 @@ gongCanvas.addEventListener('touchstart', (e) => {
 gongCanvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   unlockAudio();
+  if (performance.now() - _dismissedAt < 300) return;
   if (recState === 'playing') { recStopPlayback(); }
   if (firstInteraction) { firstInteraction = false; hint.classList.add('fade'); }
   const p = pointerToGong(e);
