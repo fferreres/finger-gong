@@ -2274,18 +2274,22 @@ function strike(strikeR, strikeTheta, force) {
     const locWeight = Math.max(0.18, Math.abs(shape));
     const mWeight = malletPartialWeight(i, P.length);
     const vary = 0.88 + Math.random() * 0.24;
-    const deposit = p.amp * locWeight * mWeight * me * STRIKE_SCALE * vary;
+    const strikeNerf = flumieMode ? 0.2 : 1;
+    const deposit = p.amp * locWeight * mWeight * me * STRIKE_SCALE * vary * strikeNerf;
     r.energy = Math.min(ENERGY_CAP, r.energy + deposit);
   });
 
-  const sTransient = flumieMode ? 1.03 : STRIKE_TRANSIENT;
-  const sAttack = flumieMode ? 0.012 : 0.003;
-  const sTau = flumieMode ? 0.08 : STRIKE_TRANSIENT_TAU;
+  const sTransient = flumieMode ? 1.01 : STRIKE_TRANSIENT;
+  const sAttack = flumieMode ? 0.015 : 0.003;
+  const sTau = flumieMode ? 0.06 : STRIKE_TRANSIENT_TAU;
   modalBank.resonators.forEach((r) => {
     r.modGain.gain.cancelScheduledValues(now);
     r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE * sTransient, now, sAttack);
     r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE, now + 0.02, sTau);
   });
+  if (flumieMode) {
+    modalBank.resonators.forEach(r => { r.energy *= 0.4; });
+  }
 
   const bendScale = flumieMode ? 0.25 : 1;
   modalBank.resonators.forEach((r, i) => {
@@ -2311,14 +2315,17 @@ function strike(strikeR, strikeTheta, force) {
   noise.buffer = nBuf;
   const nf = audioCtx.createBiquadFilter();
   nf.type = 'bandpass';
-  nf.frequency.value = malletNoiseFreq() + strikeR * 1500;
+  const noiseFreqBase = flumieMode ? malletNoiseFreq() * 0.5 : malletNoiseFreq();
+  nf.frequency.value = noiseFreqBase + strikeR * (flumieMode ? 400 : 1500);
   nf.Q.value = 1.2;
   const ng = audioCtx.createGain();
   const strikeTotalE = modalBank.resonators.reduce((s, r) => s + r.energy, 0);
   const noiseScale = 1 / (1 + strikeTotalE * 0.3);
-  const noiseAmp = (0.06 + strikeR * 0.18) * malletNoiseMult() * noiseScale;
+  const flumieNoiseBoost = flumieMode ? 2.5 : 1;
+  const noiseAmp = (0.06 + strikeR * 0.18) * malletNoiseMult() * noiseScale * flumieNoiseBoost;
   ng.gain.setValueAtTime(noiseAmp, now);
-  ng.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+  const noiseDur = flumieMode ? 0.12 : 0.25;
+  ng.gain.exponentialRampToValueAtTime(0.0001, now + noiseDur);
   noise.connect(nf); nf.connect(ng); ng.connect(masterGain);
   noise.start(now); noise.stop(now + 0.3);
   noise.onended = () => { ng.disconnect(); nf.disconnect(); };
