@@ -180,7 +180,7 @@
     right: 22px;
     z-index: 100;
     display: flex;
-    gap: 8px;
+    gap: 12px;
     background: var(--control-bg);
     border: 1px solid var(--bg-panel-border);
     padding: 6px 8px;
@@ -450,7 +450,18 @@
     0%, 100% { box-shadow: 0 0 0 rgba(232, 80, 64, 0); }
     50% { box-shadow: 0 0 12px rgba(232, 80, 64, 0.4); }
   }
-  #rec-loop { font-size: 22px; }
+  #rec-play.looping { border-color: var(--btn-glow); }
+  #rec-play.looping::after {
+    content: '∞';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    color: var(--gold);
+    line-height: 1;
+  }
+  #rec-play { position: relative; }
   #rec-play { font-size: 16px; padding-left: 2px; }
 
   .sand-spark {
@@ -850,7 +861,6 @@
   .start-overlay ~ .container .sand-gear,
   .start-overlay ~ .container .waveform-bar,
   .start-overlay ~ .container .rec-transport,
-  .start-overlay ~ .info-btn,
   .start-overlay ~ .skin-toggle {
     opacity: 0;
     transition: opacity 1.2s ease;
@@ -865,7 +875,6 @@
   .start-overlay.hidden ~ .container .sand-gear,
   .start-overlay.hidden ~ .container .waveform-bar,
   .start-overlay.hidden ~ .container .rec-transport,
-  .start-overlay.hidden ~ .info-btn,
   .start-overlay.hidden ~ .skin-toggle {
     opacity: 1;
   }
@@ -1063,7 +1072,7 @@
 
   /* Immersion mode — total darkness, just the gong */
   /* Immersion-aware transitions on chrome elements */
-  header, .instrument-selectors, .controls, .skin-toggle, .info-btn,
+  header, .instrument-selectors, .controls, .skin-toggle,
   .pitch-rack, .mallet-rack, .mode-toggle,
   .sand-gear, .sand-reset, .sand-debug, .rec-transport, .hint, .viz-column, footer {
     transition: opacity 0.8s ease;
@@ -1078,7 +1087,6 @@
   body[data-immersion="true"] .instrument-selectors,
   body[data-immersion="true"] .controls,
   body[data-immersion="true"] .skin-toggle,
-  body[data-immersion="true"] .info-btn,
   body[data-immersion="true"] .info-panel,
   body[data-immersion="true"] .pitch-rack,
   body[data-immersion="true"] .sand-debug,
@@ -1126,13 +1134,14 @@
     transition: max-width 0.8s ease;
   }
   body[data-immersion="true"] .zen-btn {
-    opacity: 0 !important;
-    pointer-events: none !important;
+    opacity: 0.45 !important;
     transition: opacity 0.8s ease !important;
   }
+  body[data-immersion="true"] .zen-btn:hover {
+    opacity: 0.6 !important;
+  }
   body[data-immersion="true"].immersion-exit-hint .zen-btn {
-    opacity: 0.3 !important;
-    pointer-events: auto !important;
+    opacity: 0.4 !important;
   }
 
   @supports (-webkit-touch-callout: none) {
@@ -1140,37 +1149,25 @@
   }
 
   .info-btn {
-    display: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1px solid var(--bg-panel-border);
+    background: var(--control-bg);
+    color: var(--text-dim);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 12px;
+    font-style: italic;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.3s ease;
   }
-  @media (orientation: portrait) and (max-width: 1100px) {
-    .info-btn {
-      display: flex;
-      position: fixed;
-      bottom: 24px;
-      right: 110px;
-      z-index: 100;
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      border: 1px solid var(--bg-panel-border);
-      background: var(--control-bg);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      color: var(--text-dim);
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 18px;
-      font-style: italic;
-      cursor: pointer;
-      align-items: center;
-      justify-content: center;
-      transition: opacity 0.3s ease;
-      padding: 0;
-      line-height: 1;
-    }
-    .info-btn:hover { color: var(--text); }
-    .info-btn:focus { outline: none; }
-    body[data-zen="true"] .info-btn { display: none !important; }
-  }
+  .info-btn:hover { color: var(--text); }
+  .info-btn:focus { outline: none; }
 
   .info-panel {
     position: fixed;
@@ -1254,8 +1251,6 @@
   <div class="start-whisper">Touch to Awaken</div>
 </div>
 
-<button class="info-btn" id="info-toggle" title="About" aria-label="About this instrument">i</button>
-
 <div class="info-panel" id="info-panel">
   <button class="info-close" id="info-close" aria-label="Close">✕</button>
   <div class="info-content">
@@ -1291,6 +1286,7 @@
 </div>
 
 <div class="skin-toggle" role="tablist" aria-label="Skin">
+  <button class="info-btn" id="info-toggle" title="About" aria-label="About this instrument">i</button>
   <button class="skin-btn active" data-skin="hearth"   title="Hearth"   aria-label="Hearth skin"></button>
   <button class="skin-btn"        data-skin="paper"    title="Paper"    aria-label="Paper skin"></button>
   <button class="skin-btn"        data-skin="nocturne" title="Nocturne" aria-label="Nocturne skin"></button>
@@ -1329,9 +1325,8 @@
           <button class="dampen-btn" id="dampen-btn" title="Hold to dampen">◎</button>
           <div class="rec-divider"></div>
           <button class="rec-btn" id="rec-record" title="Record" aria-label="Record"></button>
-          <button class="rec-btn" id="rec-play" title="Play" aria-label="Play" disabled>&#9654;</button>
+          <button class="rec-btn" id="rec-play" title="Play (double-tap to loop)" aria-label="Play" disabled>&#9654;</button>
           <button class="rec-btn" id="rec-clear" title="Clear" aria-label="Clear recording" disabled>&#10005;</button>
-          <button class="rec-btn" id="rec-loop" title="Loop" aria-label="Toggle loop">&#10227;</button>
         </div>
         <div class="mallet-rack" id="mallet-rack">
           <button class="mallet-pick" data-size="0" data-mallet="0" title="Wooden Stick"></button>
@@ -4185,9 +4180,10 @@ loop();
 
   function exitImmersion() {
     document.body.classList.add('immersion-exit-hint');
-    zenBtn.textContent = '⌃';
+    zenBtn.textContent = '⌄';
     setTimeout(() => {
       document.body.removeAttribute('data-immersion');
+      document.body.removeAttribute('data-zen');
       document.body.classList.remove('immersion-exit-hint');
       setTimeout(resizeAll, 100);
       setTimeout(resizeAll, 900);
@@ -4206,7 +4202,10 @@ loop();
   function zenUp(e) {
     if (_zenTimer) { clearTimeout(_zenTimer); _zenTimer = null; }
     if (_zenTriggered) { _zenTriggered = false; return; }
-    if (document.body.dataset.immersion === 'true') return;
+    if (document.body.dataset.immersion === 'true') {
+      exitImmersion();
+      return;
+    }
     const zen = document.body.dataset.zen !== 'true';
     document.body.dataset.zen = zen;
     zenBtn.textContent = zen ? '⌃' : '⌄';
@@ -4629,7 +4628,6 @@ function recStopPlayback() {
 function recUpdateUI() {
   const recordBtn = document.getElementById('rec-record');
   const playBtn = document.getElementById('rec-play');
-  const loopBtn = document.getElementById('rec-loop');
   const clearBtn = document.getElementById('rec-clear');
   const hasRec = recEvents.length > 0;
 
@@ -4639,10 +4637,9 @@ function recUpdateUI() {
   recordBtn.disabled = false;
 
   playBtn.disabled = !hasRec && recState !== 'playing';
-  playBtn.innerHTML = recState === 'playing' ? '&#9632;' : '&#9654;';
+  playBtn.innerHTML = '&#9654;';
   playBtn.classList.toggle('active', recState === 'playing');
-
-  loopBtn.classList.toggle('active', recLoopEnabled);
+  playBtn.classList.toggle('looping', recLoopEnabled);
 
   clearBtn.disabled = !hasRec && recState !== 'recording';
 }
@@ -4665,23 +4662,22 @@ document.getElementById('rec-record').addEventListener('click', () => {
       break;
   }
 });
-// Play: paused→playing, playing→paused, recording→pause+playing
+// Play: cycles play → loop → play-to-end
 document.getElementById('rec-play').addEventListener('click', () => {
   switch (recState) {
     case 'paused':
+      recLoopEnabled = false;
       recStartPlayback();
       break;
     case 'playing':
-      recStopPlayback();
+      recLoopEnabled = !recLoopEnabled;
+      recUpdateUI();
       break;
     case 'recording':
+      recLoopEnabled = false;
       recStartPlayback();
       break;
   }
-});
-document.getElementById('rec-loop').addEventListener('click', () => {
-  recLoopEnabled = !recLoopEnabled;
-  recUpdateUI();
 });
 document.getElementById('rec-clear').addEventListener('click', () => {
   if (recState === 'recording') recPauseRecording();
