@@ -1874,25 +1874,18 @@ function initAudio() {
   masterGain.gain.value = 0;
 
   const softClip = audioCtx.createWaveShaper();
-  const sc = new Float32Array(8192);
-  for (let i = 0; i < 8192; i++) {
-    const x = (i / 4096) - 1;
-    const ax = Math.abs(x);
-    if (ax < 0.85) {
-      sc[i] = x;
-    } else {
-      const over = (ax - 0.85) / 0.15;
-      const knee = 0.85 + 0.15 * (1 - Math.exp(-over * 1.5)) / (1 - Math.exp(-1.5));
-      sc[i] = x > 0 ? knee : -knee;
-    }
+  const sc = new Float32Array(4096);
+  for (let i = 0; i < 4096; i++) {
+    const x = (i / 2048) - 1;
+    sc[i] = Math.tanh(x * 1.6);
   }
   softClip.curve = sc;
-  softClip.oversample = '4x';
+  softClip.oversample = '2x';
 
   const comp = audioCtx.createDynamicsCompressor();
-  comp.threshold.value = -12;
-  comp.knee.value = 10;
-  comp.ratio.value = 4;
+  comp.threshold.value = -24;
+  comp.knee.value = 12;
+  comp.ratio.value = 6;
   comp.attack.value = 0.003;
   comp.release.value = 0.25;
 
@@ -2093,8 +2086,6 @@ const RUB_DRIVE_SCALE   = 1.4;
 const STRIKE_SCALE      = 1.7;
 const AMP_SCALE         = 0.4275;
 const ENERGY_CAP        = 3.5;
-const ENERGY_NORM_K     = 0.22;
-function energyNorm(totalE) { return 1 / Math.sqrt(1 + totalE * ENERGY_NORM_K); }
 let sustainNorm = 0.5;
 function DECAY_FACTOR_MULT() { return 0.02 + sustainNorm * 0.78; }
 
@@ -2104,9 +2095,6 @@ function updateModalBank(velocity, contactR, dt) {
   const P = partials();
   const decayMult = gongDecayMult();
   const me = 1.10 - malletNorm * 0.25;
-  const totalE = modalBank.resonators.reduce((s, r) => s + r.energy, 0);
-  const norm = energyNorm(totalE);
-
   const vmag = Math.sqrt(rubState.vx * rubState.vx + rubState.vy * rubState.vy);
   let radialComp = 0, tangComp = 0;
   if (vmag > 0.03) {
@@ -2154,7 +2142,7 @@ function updateModalBank(velocity, contactR, dt) {
     if (r.energy > ENERGY_CAP) r.energy = ENERGY_CAP;
     if (r.energy < 1e-6)       r.energy = 0;
 
-    const amp = r.energy * AMP_SCALE * norm;
+    const amp = r.energy * AMP_SCALE;
     r.modGain.gain.cancelScheduledValues(now);
     r.modGain.gain.setTargetAtTime(amp, now, 0.03);
 
@@ -2193,11 +2181,10 @@ function strike(strikeR, strikeTheta, force) {
 
   const totalE = modalBank.resonators.reduce((s, r) => s + r.energy, 0);
   const duckAmt = 1 - STRIKE_DUCK * Math.min(1, totalE / 4);
-  const preNorm = energyNorm(totalE);
   modalBank.resonators.forEach(r => {
     r.energy *= duckAmt;
     r.modGain.gain.cancelScheduledValues(now);
-    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE * preNorm, now, 0.012);
+    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE, now, 0.012);
   });
 
   const strikeJitter = 0.015 * (Math.random() - 0.5);
@@ -2224,12 +2211,10 @@ function strike(strikeR, strikeTheta, force) {
     r.energy = Math.min(ENERGY_CAP, r.energy + deposit);
   });
 
-  const postTotalE = modalBank.resonators.reduce((s, r) => s + r.energy, 0);
-  const postNorm = energyNorm(postTotalE);
   modalBank.resonators.forEach((r) => {
     r.modGain.gain.cancelScheduledValues(now);
-    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE * postNorm * STRIKE_TRANSIENT, now, 0.003);
-    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE * postNorm, now + 0.012, STRIKE_TRANSIENT_TAU);
+    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE * STRIKE_TRANSIENT, now, 0.003);
+    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE, now + 0.012, STRIKE_TRANSIENT_TAU);
   });
 
   modalBank.resonators.forEach((r, i) => {
@@ -2258,7 +2243,8 @@ function strike(strikeR, strikeTheta, force) {
   nf.frequency.value = malletNoiseFreq() + strikeR * 1500;
   nf.Q.value = 1.2;
   const ng = audioCtx.createGain();
-  const noiseScale = 1 / (1 + postTotalE * 0.3);
+  const strikeTotalE = modalBank.resonators.reduce((s, r) => s + r.energy, 0);
+  const noiseScale = 1 / (1 + strikeTotalE * 0.3);
   const noiseAmp = (0.06 + strikeR * 0.18) * malletNoiseMult() * noiseScale;
   ng.gain.setValueAtTime(noiseAmp, now);
   ng.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
@@ -3723,7 +3709,7 @@ gongSlider.addEventListener('input', (e) => {
     vol: sizeLerp('vol'),
   };
   gongSizeIdx = newIdx;
-  SIZE_MORPH_DURATION = 10;
+  SIZE_MORPH_DURATION = 3;
   sizeMorphT = 0;
   updateGongDisplay();
   retuneModalBank();
@@ -4314,6 +4300,7 @@ gongCanvas.addEventListener('pointerleave', (e) => {
 // MAIN LOOP
 // ============================================================
 let lastLoopT = performance.now();
+let recState = 'idle';
 function loop() {
   try {
   if (modalBank && !modalBank.startedRunning) ensureModalBankLive();
@@ -4390,11 +4377,9 @@ function loop() {
         r.energy *= factor;
         if (r.energy < 1e-6) r.energy = 0;
       });
-      const dampTotalE = modalBank.resonators.reduce((s, r) => s + r.energy, 0);
-      const dampNorm = energyNorm(dampTotalE);
       modalBank.resonators.forEach(r => {
         r.modGain.gain.cancelScheduledValues(dampNow);
-        r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE * dampNorm, dampNow, 0.01);
+        r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE, dampNow, 0.01);
       });
       for (let i = 0; i < GRID * GRID; i++) {
         u[i] *= factor; uPrev[i] *= factor;
@@ -4601,7 +4586,6 @@ document.getElementById('sand-gear').addEventListener('click', () => {
 // RECORDING / PLAYBACK
 // ============================================================
 // States: 'idle' (nothing recorded), 'recording', 'paused' (has data, can append), 'playing'
-let recState = 'idle';
 let recEvents = [];
 let recStartT = 0;
 let recElapsed = 0;
