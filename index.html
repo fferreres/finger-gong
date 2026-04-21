@@ -282,6 +282,36 @@
   }
   .pitch-pick:focus { outline: none; }
 
+  body[data-healing="true"] .pitch-pick {
+    position: relative;
+    font-size: 9.5px;
+    letter-spacing: -0.02em;
+  }
+  body[data-healing="true"] .pitch-pick .hz { font-size: inherit; }
+  body[data-healing="true"] .pitch-pick .intent { display: none; }
+  body[data-healing="true"] .pitch-pick.active .intent {
+    display: block;
+    position: absolute;
+    left: calc(100% + 7px);
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 8px;
+    font-family: 'Inter', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+    opacity: 0.7;
+    white-space: nowrap;
+    pointer-events: none;
+    animation: intentFade 0.4s ease-out;
+  }
+  @keyframes intentFade {
+    from { opacity: 0; transform: translateY(-50%) translateX(-4px); }
+    to { opacity: 0.7; transform: translateY(-50%) translateX(0); }
+  }
+
   .dampen-btn {
     width: 40px;
     height: 40px;
@@ -369,6 +399,65 @@
     50% { box-shadow: 0 0 14px rgba(200, 160, 80, 0.35); }
   }
   .mode-toggle.hinting { animation: sandHint 2.5s ease-in-out; }
+
+  .tuning-toggle {
+    height: 22px;
+    border: 1px solid var(--bg-panel-border);
+    background: var(--control-bg);
+    border-radius: 100px;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    user-select: none;
+    -webkit-user-select: none;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    touch-action: manipulation;
+    transition: border-color 0.3s ease, background 0.3s ease;
+    margin-bottom: 8px;
+  }
+  .tuning-toggle-option {
+    position: relative;
+    z-index: 1;
+    padding: 0 8px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 8px;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    cursor: pointer;
+    border: none;
+    background: none;
+    border-radius: 100px;
+    transition: color 0.3s ease;
+    white-space: nowrap;
+  }
+  .tuning-toggle-option:focus { outline: none; }
+  .tuning-toggle-option.active { color: var(--gold); }
+  .tuning-toggle-slider {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    height: 18px;
+    border-radius: 100px;
+    background: linear-gradient(135deg, var(--btn-top), var(--btn-bot));
+    box-shadow: 0 0 6px var(--btn-glow);
+    transition: left 0.3s ease, width 0.3s ease;
+    pointer-events: none;
+  }
+  .mallet-pick.bliss-hint {
+    animation: blissBloom 3s ease-in-out infinite;
+  }
+  @keyframes blissBloom {
+    0%, 100% { box-shadow: 0 0 0 rgba(200, 170, 100, 0); }
+    50% { box-shadow: 0 0 12px rgba(200, 170, 100, 0.25); }
+  }
+  body[data-healing="true"] #gong-slider-control { opacity: 0.25; pointer-events: none; }
 
   /* ==========================================================
      RECORDING TRANSPORT
@@ -1305,6 +1394,11 @@
       <div class="gong-stage">
         <canvas id="gong" class="asleep" width="1000" height="1000"></canvas>
         <div class="pitch-rack" id="pitch-rack">
+          <div class="tuning-toggle" id="tuning-toggle">
+            <div class="tuning-toggle-slider" id="tuning-slider"></div>
+            <button class="tuning-toggle-option active" data-tuning="pentatonic">Scale</button>
+            <button class="tuning-toggle-option" data-tuning="healing">Bliss</button>
+          </div>
           <button class="pitch-pick active" data-pitch="5" title="C — octave">C'</button>
           <button class="pitch-pick" data-pitch="4" title="A">A</button>
           <button class="pitch-pick" data-pitch="3" title="G">G</button>
@@ -1360,7 +1454,7 @@
       </div>
 
       <div class="controls">
-        <div class="control">
+        <div class="control" id="gong-slider-control">
           <div class="control-label">
             <span class="control-name">Gong</span>
             <span class="control-value" id="gong-value">Medium<span class="unit">34in</span></span>
@@ -1607,6 +1701,7 @@ const MATERIALS = {
 // ============================================================
 // STATE
 // ============================================================
+let cachedSkin = 'hearth';
 let gongSizeIdx = 2;
 let pitchRatio = 2;
 let malletNorm = 0.5;
@@ -1614,12 +1709,16 @@ let interactionMode = 'strike';
 let currentShape = 'chau';
 let currentMaterial = 'bronze';
 
+let healingMode = false;
+let currentHealingIdx = 5;
+let healingTarget = null;
+
 function shape() { return SHAPES[currentShape]; }
 function material() { return MATERIALS[currentMaterial]; }
 
 let sizeMorphFrom = null;
 let sizeMorphT = 1;
-const SIZE_MORPH_DURATION = 10;
+let SIZE_MORPH_DURATION = 10;
 
 let matMorphFrom = null;
 let matMorphT = 1;
@@ -1694,7 +1793,7 @@ function lerpPalette(from, to, t) {
   return out;
 }
 function activePalette() {
-  const skin = document.body.getAttribute('data-skin') || 'hearth';
+  const skin = cachedSkin;
   const morphing = matMorphT < 1 && matMorphFrom;
   const key = currentMaterial + ':' + skin + (morphing ? ':' + matMorphT.toFixed(3) : '');
   if (_paletteCacheKey === key && _paletteCache) return _paletteCache;
@@ -1714,7 +1813,7 @@ const GONG_SIZES = [
   { label: 'Medium', inches: 34, baseFreq: 65.41,  decay: 1.0, scale: 0.88, vol: 0.85 },
   { label: 'Large',  inches: 50, baseFreq: 32.70,  decay: 1.4, scale: 1.06, vol: 1.0 },
 ];
-function gongSize_()        { return GONG_SIZES[gongSizeIdx]; }
+function gongSize_()        { return (healingMode && healingTarget) ? healingTarget : GONG_SIZES[gongSizeIdx]; }
 function sizeLerp(key) {
   if (sizeMorphT >= 1 || !sizeMorphFrom) return gongSize_()[key];
   const t = morphEase(sizeMorphT);
@@ -1832,7 +1931,7 @@ function initAudio() {
   reverbWet.gain.value = spaceNorm * 0.7;
 
   analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 4096;
+  analyser.fftSize = 2048;
   analyser.smoothingTimeConstant = 0.75;
   timeData = new Uint8Array(analyser.fftSize);
   freqData = new Uint8Array(analyser.frequencyBinCount);
@@ -2458,6 +2557,18 @@ const chladniGradY = new Float32Array(GRID * GRID);
 const ENVELOPE_RISE = 0.2;
 const ENVELOPE_FALL = 0.12;
 
+const _SP_GC = 28, _SP_GC2 = _SP_GC * _SP_GC;
+const _spDensRaw = new Float32Array(_SP_GC2);
+const _spDensTmp = new Float32Array(_SP_GC2);
+const _spDens    = new Float32Array(_SP_GC2);
+const _spDensGX  = new Float32Array(_SP_GC2);
+const _spDensGY  = new Float32Array(_SP_GC2);
+const _srDensMap  = new Float32Array(_SP_GC2);
+const _srDensBlur = new Float32Array(_SP_GC2);
+const _rfD = 8, _rfD2 = _rfD * _rfD;
+const _rfDensity = new Float32Array(_rfD2);
+const _rfWeights = new Float32Array(_rfD2);
+
 function computeChladniField() {
   chladniGradX.fill(0);
   chladniGradY.fill(0);
@@ -2519,45 +2630,41 @@ function updateSandParticles(dt) {
   const maxV = p.maxv;
   const bounceHz = p.bouncehz;
 
-  // Density grid for inter-particle gravity (blurred to prevent grid artifacts)
-  const GC = 28, gcSz = GRID / GC;
-  const gDensRaw = new Float32Array(GC * GC);
+  const GC = _SP_GC, gcSz = GRID / GC;
+  _spDensRaw.fill(0);
   for (let i = 0; i < SAND_COUNT; i++) {
     if (sandX[i] < -900) continue;
     const cx = Math.floor(sandX[i] / gcSz), cy = Math.floor(sandY[i] / gcSz);
-    if (cx >= 0 && cx < GC && cy >= 0 && cy < GC) gDensRaw[cy * GC + cx]++;
+    if (cx >= 0 && cx < GC && cy >= 0 && cy < GC) _spDensRaw[cy * GC + cx]++;
   }
-  // Two-pass box blur for smooth field
-  const gDens = new Float32Array(GC * GC);
-  const gDensTmp = new Float32Array(GC * GC);
+  _spDensTmp.fill(0);
   for (let y = 0; y < GC; y++) {
     for (let x = 0; x < GC; x++) {
       let s = 0, c = 0;
       for (let dx = -2; dx <= 2; dx++) {
         const nx = x + dx;
-        if (nx >= 0 && nx < GC) { s += gDensRaw[y * GC + nx]; c++; }
+        if (nx >= 0 && nx < GC) { s += _spDensRaw[y * GC + nx]; c++; }
       }
-      gDensTmp[y * GC + x] = s / c;
+      _spDensTmp[y * GC + x] = s / c;
     }
   }
+  _spDens.fill(0);
   for (let y = 0; y < GC; y++) {
     for (let x = 0; x < GC; x++) {
       let s = 0, c = 0;
       for (let dy = -2; dy <= 2; dy++) {
         const ny = y + dy;
-        if (ny >= 0 && ny < GC) { s += gDensTmp[ny * GC + x]; c++; }
+        if (ny >= 0 && ny < GC) { s += _spDensTmp[ny * GC + x]; c++; }
       }
-      gDens[y * GC + x] = s / c;
+      _spDens[y * GC + x] = s / c;
     }
   }
-  // Gradient of blurred density
-  const gDensGX = new Float32Array(GC * GC);
-  const gDensGY = new Float32Array(GC * GC);
+  _spDensGX.fill(0); _spDensGY.fill(0);
   for (let y = 1; y < GC - 1; y++) {
     for (let x = 1; x < GC - 1; x++) {
       const idx = y * GC + x;
-      gDensGX[idx] = (gDens[idx + 1] - gDens[idx - 1]) * 0.5;
-      gDensGY[idx] = (gDens[idx + GC] - gDens[idx - GC]) * 0.5;
+      _spDensGX[idx] = (_spDens[idx + 1] - _spDens[idx - 1]) * 0.5;
+      _spDensGY[idx] = (_spDens[idx + GC] - _spDens[idx - GC]) * 0.5;
     }
   }
 
@@ -2617,8 +2724,8 @@ function updateSandParticles(dt) {
       const gcx = Math.floor(gx / gcSz), gcy = Math.floor(gy / gcSz);
       if (gcx >= 1 && gcx < GC - 1 && gcy >= 1 && gcy < GC - 1) {
         const gi2 = gcy * GC + gcx;
-        let gfx = gDensGX[gi2] * p.gravity * 0.02 * energyNorm;
-        let gfy = gDensGY[gi2] * p.gravity * 0.02 * energyNorm;
+        let gfx = _spDensGX[gi2] * p.gravity * 0.02 * energyNorm;
+        let gfy = _spDensGY[gi2] * p.gravity * 0.02 * energyNorm;
         const gfMag = Math.sqrt(gfx * gfx + gfy * gfy);
         const gfMax = 3;
         if (gfMag > gfMax) { gfx *= gfMax / gfMag; gfy *= gfMax / gfMag; }
@@ -2661,33 +2768,31 @@ function updateSandParticles(dt) {
     const respawnPerFrame = Math.min(deadCount, 30);
 
     if (p.refill === 'weighted' && deadCount > 0) {
-      // Build coarse 8x8 density grid to find sparse areas
-      const D = 8, cellW = (gridR * 2) / D;
-      const density = new Float32Array(D * D);
+      const D = _rfD, cellW = (gridR * 2) / D;
+      _rfDensity.fill(0);
       for (let i = 0; i < SAND_COUNT; i++) {
         if (sandX[i] < -900) continue;
         const cx = Math.floor((sandX[i] - (gridCx - gridR)) / cellW);
         const cy = Math.floor((sandY[i] - (gridCy - gridR)) / cellW);
-        if (cx >= 0 && cx < D && cy >= 0 && cy < D) density[cy * D + cx]++;
+        if (cx >= 0 && cx < D && cy >= 0 && cy < D) _rfDensity[cy * D + cx]++;
       }
       let maxDens = 1;
-      for (let j = 0; j < D * D; j++) if (density[j] > maxDens) maxDens = density[j];
-      // Build weight array (inverse density)
-      const weights = new Float32Array(D * D);
+      for (let j = 0; j < _rfD2; j++) if (_rfDensity[j] > maxDens) maxDens = _rfDensity[j];
+      _rfWeights.fill(0);
       let wSum = 0;
-      for (let j = 0; j < D * D; j++) {
+      for (let j = 0; j < _rfD2; j++) {
         const cx = (j % D + 0.5) * cellW + (gridCx - gridR) - gridCx;
         const cy = (Math.floor(j / D) + 0.5) * cellW + (gridCy - gridR) - gridCy;
         if (Math.sqrt(cx * cx + cy * cy) > gridR * 0.9) continue;
-        weights[j] = 1 - density[j] / maxDens + 0.1;
-        wSum += weights[j];
+        _rfWeights[j] = 1 - _rfDensity[j] / maxDens + 0.1;
+        wSum += _rfWeights[j];
       }
       let spawned = 0;
       for (let i = 0; i < SAND_COUNT && spawned < respawnPerFrame; i++) {
         if (sandX[i] > -900) continue;
         // Weighted random cell pick
         let r = Math.random() * wSum, cell = 0;
-        for (let j = 0; j < D * D; j++) { r -= weights[j]; if (r <= 0) { cell = j; break; } }
+        for (let j = 0; j < _rfD2; j++) { r -= _rfWeights[j]; if (r <= 0) { cell = j; break; } }
         const bx = (cell % D) * cellW + (gridCx - gridR);
         const by = Math.floor(cell / D) * cellW + (gridCy - gridR);
         sandX[i] = bx + Math.random() * cellW;
@@ -2785,7 +2890,7 @@ let _sparkleFrame = 0;
 
 function renderSandToOffscreen() {
   const data = sandImage.data;
-  const skin = document.body.getAttribute('data-skin') || 'hearth';
+  const skin = cachedSkin;
   let bgR, bgG, bgB;
   if (skin === 'paper') { bgR = 42; bgG = 34; bgB = 24; }
   else if (skin === 'nocturne') { bgR = 8; bgG = 12; bgB = 20; }
@@ -2808,30 +2913,30 @@ function renderSandToOffscreen() {
     }
   }
 
-  const DC = 28;
+  const DC = _SP_GC;
   const cellSz = GRID / DC;
-  const densMap = new Float32Array(DC * DC);
+  _srDensMap.fill(0);
   for (let i = 0; i < SAND_COUNT; i++) {
     if (sandX[i] < -900) continue;
     const cx = Math.floor(sandX[i] / cellSz);
     const cy = Math.floor(sandY[i] / cellSz);
-    if (cx >= 0 && cx < DC && cy >= 0 && cy < DC) densMap[cy * DC + cx]++;
+    if (cx >= 0 && cx < DC && cy >= 0 && cy < DC) _srDensMap[cy * DC + cx]++;
   }
-  const densBlur = new Float32Array(DC * DC);
+  _srDensBlur.fill(0);
   for (let y = 0; y < DC; y++) {
     for (let x = 0; x < DC; x++) {
       let sum = 0, cnt = 0;
       for (let dy = -1; dy <= 1; dy++) {
         for (let dx = -1; dx <= 1; dx++) {
           const nx = x + dx, ny = y + dy;
-          if (nx >= 0 && nx < DC && ny >= 0 && ny < DC) { sum += densMap[ny * DC + nx]; cnt++; }
+          if (nx >= 0 && nx < DC && ny >= 0 && ny < DC) { sum += _srDensMap[ny * DC + nx]; cnt++; }
         }
       }
-      densBlur[y * DC + x] = sum / cnt;
+      _srDensBlur[y * DC + x] = sum / cnt;
     }
   }
   let maxDens = 1;
-  for (let j = 0; j < DC * DC; j++) if (densBlur[j] > maxDens) maxDens = densBlur[j];
+  for (let j = 0; j < _SP_GC2; j++) if (_srDensBlur[j] > maxDens) maxDens = _srDensBlur[j];
 
   const baseR = 200, baseG = 160, baseB = 70;
   const hotR = 255, hotG = 230, hotB = 120;
@@ -2867,7 +2972,7 @@ function renderSandToOffscreen() {
     const gx = sandX[i], gy = sandY[i];
     const dcx = Math.min(DC - 1, Math.floor(gx / cellSz));
     const dcy = Math.min(DC - 1, Math.floor(gy / cellSz));
-    const localDens = densBlur[dcy * DC + dcx] / maxDens;
+    const localDens = _srDensBlur[dcy * DC + dcx] / maxDens;
     const densAlpha = 0.55 + localDens * 0.45;
 
     const vMag = Math.sqrt(sandVx[i] * sandVx[i] + sandVy[i] * sandVy[i]);
@@ -2933,7 +3038,7 @@ function renderSandToOffscreen() {
     const glowCellPx = SR / glowRes;
     for (let cy = 0; cy < glowRes; cy++) {
       for (let cx = 0; cx < glowRes; cx++) {
-        const d = densBlur[cy * DC + cx] / maxDens;
+        const d = _srDensBlur[cy * DC + cx] / maxDens;
         if (d < 0.4) continue;
         const intensity = (d - 0.4) / 0.6;
         const ga = intensity * intensity * 0.09 * sandFadeIn;
@@ -3108,12 +3213,17 @@ function setupHiDPI(canvas) {
 }
 
 let gongSize = { w: 500, h: 500 };
+let vizPanelsVisible = true;
 
 function resizeAll() {
   gongSize = setupHiDPI(gongCanvas);
-  setupHiDPI(wfCanvas);
-  setupHiDPI(radCanvas);
-  resetSpectrogram();
+  const vizCol = document.querySelector('.viz-column');
+  vizPanelsVisible = vizCol && vizCol.offsetParent !== null;
+  if (vizPanelsVisible) {
+    setupHiDPI(wfCanvas);
+    setupHiDPI(radCanvas);
+    resetSpectrogram();
+  }
 }
 
 function computeDiscR() {
@@ -3313,7 +3423,7 @@ function drawGong() {
   gctx.stroke();
 
   gctx.save();
-  const skin = document.body.getAttribute('data-skin') || 'hearth';
+  const skin = cachedSkin;
   gctx.shadowColor = skin === 'paper' ? 'rgba(80, 60, 30, 0.3)' : 'rgba(0, 0, 0, 0.55)';
   gctx.shadowBlur = 28;
   gctx.shadowOffsetY = 14;
@@ -3487,21 +3597,33 @@ function resetSpectrogram() {
   specBufferCtx.fillRect(0, 0, specW, specH);
 }
 
-function heatColor(v) {
-  v = Math.max(0, Math.min(1, v));
-  if (v < 0.02) return 'rgb(9, 7, 5)';
+let _heatLUT = null;
+let _heatLUTKey = '';
+function ensureHeatLUT() {
+  const key = currentMaterial;
+  if (_heatLUTKey === key && _heatLUT) return;
+  _heatLUT = new Array(256);
   const pal = material().palette;
-  if (v < 0.5) {
-    const t = v / 0.5;
-    return `rgb(${Math.floor(pal.discMid[0] * t + 10 * (1-t))},${Math.floor(pal.discMid[1] * t)},${Math.floor(pal.discMid[2] * t)})`;
-  } else {
-    const t = (v - 0.5) / 0.5;
-    const a = pal.discMid, b = pal.discHigh;
-    const r = Math.min(255, Math.floor(a[0] * (1-t) + b[0] * t + t * 60));
-    const g = Math.min(255, Math.floor(a[1] * (1-t) + b[1] * t + t * 60));
-    const bl = Math.min(255, Math.floor(a[2] * (1-t) + b[2] * t + t * 90));
-    return `rgb(${r},${g},${bl})`;
+  for (let i = 0; i < 256; i++) {
+    const v = i / 255;
+    if (v < 0.02) { _heatLUT[i] = 'rgb(9,7,5)'; continue; }
+    if (v < 0.5) {
+      const t = v / 0.5;
+      _heatLUT[i] = `rgb(${Math.floor(pal.discMid[0] * t + 10 * (1-t))},${Math.floor(pal.discMid[1] * t)},${Math.floor(pal.discMid[2] * t)})`;
+    } else {
+      const t = (v - 0.5) / 0.5;
+      const a = pal.discMid, b = pal.discHigh;
+      const r = Math.min(255, Math.floor(a[0] * (1-t) + b[0] * t + t * 60));
+      const g = Math.min(255, Math.floor(a[1] * (1-t) + b[1] * t + t * 60));
+      const bl = Math.min(255, Math.floor(a[2] * (1-t) + b[2] * t + t * 90));
+      _heatLUT[i] = `rgb(${r},${g},${bl})`;
+    }
   }
+  _heatLUTKey = key;
+}
+function heatColor(v) {
+  ensureHeatLUT();
+  return _heatLUT[Math.max(0, Math.min(255, Math.round(v * 255)))];
 }
 
 function drawSpectrogram() {
@@ -3579,7 +3701,8 @@ function malletLabel(v) {
 }
 function updateGongDisplay() {
   const s = gongSize_();
-  gongValue.innerHTML = `${s.label}<span class="unit">${s.inches}in</span>`;
+  const inches = Math.round(s.inches);
+  gongValue.innerHTML = `${s.label}<span class="unit">${inches}in</span>`;
 }
 function updateMalletDisplay() {
   malletValue.textContent = malletLabel(malletNorm);
@@ -3589,6 +3712,7 @@ function updateMalletDisplay() {
   });
 }
 gongSlider.addEventListener('input', (e) => {
+  if (healingMode) return;
   const newIdx = parseInt(e.target.value);
   if (newIdx === gongSizeIdx) return;
   sizeMorphFrom = {
@@ -3599,6 +3723,7 @@ gongSlider.addEventListener('input', (e) => {
     vol: sizeLerp('vol'),
   };
   gongSizeIdx = newIdx;
+  SIZE_MORPH_DURATION = 10;
   sizeMorphT = 0;
   updateGongDisplay();
   retuneModalBank();
@@ -3673,15 +3798,177 @@ const PITCH_NAMES = ['C', 'D', 'E', 'G', 'A', "C'"];
 let currentPitchIdx = 5;
 pitchRatio = PITCH_RATIOS[5];
 
+const HEALING_PRESETS = [
+  { freq: 174, label: '174', name: 'Relief' },
+  { freq: 285, label: '285', name: 'Renewal' },
+  { freq: 396, label: '396', name: 'Release' },
+  { freq: 528, label: '528', name: 'Love' },
+  { freq: 639, label: '639', name: 'Connection' },
+  { freq: 852, label: '852', name: 'Intuition' },
+];
+
+function sizeParamsFromFreq(freq) {
+  const sizes = GONG_SIZES;
+  const keys = ['inches', 'decay', 'scale', 'vol'];
+  function lerpSizes(a, b, t) {
+    const out = { baseFreq: freq, label: Math.round(freq) + 'Hz' };
+    for (const k of keys) out[k] = a[k] + (b[k] - a[k]) * t;
+    out.scale = Math.max(0.30, out.scale);
+    out.vol = Math.max(0.20, Math.min(1.2, out.vol));
+    out.decay = Math.max(0.25, out.decay);
+    return out;
+  }
+  const logF = Math.log(freq);
+  if (freq >= sizes[0].baseFreq) {
+    const logA = Math.log(sizes[0].baseFreq);
+    const logB = Math.log(sizes[1].baseFreq);
+    const t = (logF - logA) / (logB - logA);
+    return lerpSizes(sizes[0], sizes[1], t);
+  }
+  if (freq <= sizes[sizes.length - 1].baseFreq) {
+    const n = sizes.length - 1;
+    const logA = Math.log(sizes[n - 1].baseFreq);
+    const logB = Math.log(sizes[n].baseFreq);
+    const t = (logF - logA) / (logB - logA);
+    return lerpSizes(sizes[n - 1], sizes[n], t);
+  }
+  for (let i = 0; i < sizes.length - 1; i++) {
+    if (freq <= sizes[i].baseFreq && freq >= sizes[i + 1].baseFreq) {
+      const logA = Math.log(sizes[i].baseFreq);
+      const logB = Math.log(sizes[i + 1].baseFreq);
+      const t = (logF - logA) / (logB - logA);
+      return lerpSizes(sizes[i], sizes[i + 1], t);
+    }
+  }
+  return lerpSizes(sizes[sizes.length - 2], sizes[sizes.length - 1], 1);
+}
+
+function applyHealingPreset(idx) {
+  const preset = HEALING_PRESETS[idx];
+  const targetBaseFreq = preset.freq / shape().pitchMult;
+  pitchRatio = 1;
+  sizeMorphFrom = {
+    inches: sizeLerp('inches'),
+    baseFreq: sizeLerp('baseFreq'),
+    decay: sizeLerp('decay'),
+    scale: sizeLerp('scale'),
+    vol: sizeLerp('vol'),
+  };
+  healingTarget = {
+    baseFreq: targetBaseFreq,
+    inches: 34, decay: 1.4, scale: 0.88, vol: 1.0,
+    label: preset.freq + 'Hz',
+  };
+  SIZE_MORPH_DURATION = 0.8;
+  sizeMorphT = 0;
+  updateGongDisplay();
+  retuneModalBank();
+  if (masterGain && audioCtx) {
+    masterGain.gain.setTargetAtTime(currentMasterGain(), audioCtx.currentTime, 0.05);
+  }
+}
+
+function updateTuningToggle() {
+  const toggle = document.getElementById('tuning-toggle');
+  const opts = toggle.querySelectorAll('.tuning-toggle-option');
+  const slider = document.getElementById('tuning-slider');
+  opts.forEach(o => o.classList.toggle('active', healingMode ? o.dataset.tuning === 'healing' : o.dataset.tuning === 'pentatonic'));
+  const activeOpt = toggle.querySelector('.tuning-toggle-option.active');
+  if (activeOpt && slider) {
+    slider.style.left = activeOpt.offsetLeft + 'px';
+    slider.style.width = activeOpt.offsetWidth + 'px';
+  }
+}
+
+function updatePitchRackLabels() {
+  const buttons = document.querySelectorAll('.pitch-pick');
+  if (healingMode) {
+    buttons.forEach(btn => {
+      const idx = parseInt(btn.dataset.pitch);
+      const preset = HEALING_PRESETS[idx];
+      btn.innerHTML = `<span class="hz">${preset.label}</span><span class="intent">${preset.name}</span>`;
+      btn.title = preset.name + ' — ' + preset.freq + ' Hz';
+      btn.classList.toggle('active', idx === currentHealingIdx);
+    });
+  } else {
+    buttons.forEach(btn => {
+      const idx = parseInt(btn.dataset.pitch);
+      btn.innerHTML = PITCH_NAMES[idx];
+      btn.title = idx === 0 ? 'C — root' : idx === 5 ? 'C — octave' : PITCH_NAMES[idx];
+      btn.classList.toggle('active', idx === currentPitchIdx);
+    });
+  }
+}
+
+function updateBlissHints() {
+  document.querySelectorAll('.mallet-pick').forEach(btn => {
+    const m = parseInt(btn.dataset.mallet);
+    if (m === 3 || m === 4) {
+      btn.classList.toggle('bliss-hint', healingMode);
+    }
+  });
+}
+
+function setHealingMode(enabled) {
+  healingMode = enabled;
+  document.body.setAttribute('data-healing', enabled ? 'true' : 'false');
+  updateTuningToggle();
+  updatePitchRackLabels();
+  updateBlissHints();
+  if (enabled) {
+    applyHealingPreset(currentHealingIdx);
+  } else {
+    healingTarget = null;
+    pitchRatio = PITCH_RATIOS[currentPitchIdx];
+    sizeMorphFrom = {
+      inches: sizeLerp('inches'),
+      baseFreq: sizeLerp('baseFreq'),
+      decay: sizeLerp('decay'),
+      scale: sizeLerp('scale'),
+      vol: sizeLerp('vol'),
+    };
+    SIZE_MORPH_DURATION = 1.5;
+    sizeMorphT = 0;
+    updateGongDisplay();
+    retuneModalBank();
+    if (masterGain && audioCtx) {
+      masterGain.gain.setTargetAtTime(currentMasterGain(), audioCtx.currentTime, 0.05);
+    }
+  }
+}
+
 function updatePitchRack() {
   document.querySelectorAll('.pitch-pick').forEach(btn => {
-    btn.classList.toggle('active', parseInt(btn.dataset.pitch) === currentPitchIdx);
+    if (healingMode) {
+      btn.classList.toggle('active', parseInt(btn.dataset.pitch) === currentHealingIdx);
+    } else {
+      btn.classList.toggle('active', parseInt(btn.dataset.pitch) === currentPitchIdx);
+    }
   });
 }
 document.getElementById('pitch-rack').addEventListener('click', (e) => {
   const btn = e.target.closest('.pitch-pick');
   if (!btn) return;
   const newIdx = parseInt(btn.dataset.pitch);
+
+  if (healingMode) {
+    if (newIdx === currentHealingIdx) return;
+    currentHealingIdx = newIdx;
+    updatePitchRack();
+    applyHealingPreset(currentHealingIdx);
+    recPushEvent({ type: 'control', key: 'healingPreset', value: newIdx });
+    if (modalBank && audioCtx) {
+      const now = audioCtx.currentTime;
+      modalBank.resonators.forEach(r => {
+        r.energy = 0;
+        r.modGain.gain.cancelScheduledValues(now);
+        r.modGain.gain.setValueAtTime(0, now);
+      });
+    }
+    strike(0.35 + Math.random() * 0.25, Math.random() * Math.PI * 2, 1.0);
+    return;
+  }
+
   if (newIdx === currentPitchIdx) return;
   currentPitchIdx = newIdx;
   pitchRatio = PITCH_RATIOS[currentPitchIdx];
@@ -3709,6 +3996,17 @@ document.getElementById('pitch-rack').addEventListener('click', (e) => {
   }
   strike(0.35 + Math.random() * 0.25, Math.random() * Math.PI * 2, 1.0);
 });
+
+document.getElementById('tuning-toggle').addEventListener('click', (e) => {
+  const opt = e.target.closest('.tuning-toggle-option');
+  if (!opt) return;
+  const wantHealing = opt.dataset.tuning === 'healing';
+  if (wantHealing === healingMode) return;
+  setHealingMode(wantHealing);
+  recPushEvent({ type: 'control', key: 'healingMode', value: wantHealing });
+});
+
+requestAnimationFrame(() => { updateTuningToggle(); });
 
 // Dampen — hold to gradually silence
 let dampenActive = false;
@@ -3749,6 +4047,7 @@ document.querySelectorAll('#shape-buttons .selector-btn').forEach(btn => {
     _morphedT = -1;
     document.querySelectorAll('#shape-buttons .selector-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.shape === currentShape));
+    if (healingMode) applyHealingPreset(currentHealingIdx);
     retuneModalBank();
     recPushEvent({ type: 'control', key: 'shape', value: v });
   });
@@ -3770,6 +4069,7 @@ document.querySelectorAll('#material-buttons .selector-btn').forEach(btn => {
     currentMaterial = v;
     matMorphT = 0;
     _paletteCacheKey = '';
+    _heatLUTKey = '';
     document.querySelectorAll('#material-buttons .selector-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.material === currentMaterial));
     retuneModalBank();
@@ -3785,7 +4085,9 @@ document.querySelectorAll('.skin-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const skin = btn.dataset.skin;
     document.body.dataset.skin = skin;
+    cachedSkin = skin;
     _paletteCacheKey = '';
+    _heatLUTKey = '';
     document.querySelectorAll('.skin-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.skin === skin));
   });
@@ -4101,9 +4403,11 @@ function loop() {
   }
 
   drawGong();
-  drawWaveform();
-  drawSpectrogram();
-  drawRadial();
+  if (vizPanelsVisible) {
+    drawWaveform();
+    drawSpectrogram();
+    drawRadial();
+  }
 
   if (!chladniMode && sandTransition <= 0) sandHintUpdate(dt);
   if (recState === 'playing') recPlaybackTick();
@@ -4323,6 +4627,7 @@ function recCaptureSnapshot() {
   return {
     currentShape, currentMaterial, gongSizeIdx, currentPitchIdx,
     pitchRatio, malletNorm, sustainNorm, spaceNorm, volumeNorm, chladniMode,
+    healingMode, currentHealingIdx,
   };
 }
 
@@ -4388,7 +4693,7 @@ function recRestoreSnapshot(snap) {
       palette: palCopy,
     };
     currentMaterial = snap.currentMaterial;
-    matMorphT = 0; _paletteCacheKey = '';
+    matMorphT = 0; _paletteCacheKey = ''; _heatLUTKey = '';
     document.querySelectorAll('#material-buttons .selector-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.material === currentMaterial));
     retuneModalBank();
@@ -4427,6 +4732,14 @@ function recRestoreSnapshot(snap) {
     document.getElementById('sand-reset').classList.toggle('visible', chladniMode);
     if (chladniMode) { chladniEnvelope.fill(0); initSandParticles(); sandFadeIn = 0; sandTransition = 0; }
   }
+  if (snap.healingMode !== undefined && snap.healingMode !== healingMode) {
+    currentHealingIdx = snap.currentHealingIdx !== undefined ? snap.currentHealingIdx : 5;
+    setHealingMode(snap.healingMode);
+  } else if (snap.healingMode && snap.currentHealingIdx !== undefined && snap.currentHealingIdx !== currentHealingIdx) {
+    currentHealingIdx = snap.currentHealingIdx;
+    applyHealingPreset(currentHealingIdx);
+    updatePitchRack();
+  }
 }
 
 function recPolarToScreen(r, theta) {
@@ -4449,6 +4762,7 @@ function recApplyControl(key, value) {
         shapeMorphT = 0; _morphedT = -1;
         document.querySelectorAll('#shape-buttons .selector-btn').forEach(b =>
           b.classList.toggle('active', b.dataset.shape === currentShape));
+        if (healingMode) applyHealingPreset(currentHealingIdx);
         retuneModalBank();
       }
       break;
@@ -4462,7 +4776,7 @@ function recApplyControl(key, value) {
           noiseAmpMult: matLerp('noiseAmpMult'), waveDamping: matLerp('waveDamping'),
           palette: palCopy,
         };
-        currentMaterial = value; matMorphT = 0; _paletteCacheKey = '';
+        currentMaterial = value; matMorphT = 0; _paletteCacheKey = ''; _heatLUTKey = '';
         document.querySelectorAll('#material-buttons .selector-btn').forEach(b =>
           b.classList.toggle('active', b.dataset.material === currentMaterial));
         retuneModalBank();
@@ -4516,6 +4830,27 @@ function recApplyControl(key, value) {
     case 'sustain':
       sustainNorm = value; sustainSlider.value = sustainNorm; updateSustainDisplay();
       break;
+    case 'healingMode':
+      if (value !== healingMode) setHealingMode(value);
+      break;
+    case 'healingPreset': {
+      const newIdx = value;
+      if (newIdx !== currentHealingIdx) {
+        currentHealingIdx = newIdx;
+        updatePitchRack();
+        applyHealingPreset(currentHealingIdx);
+        if (modalBank && audioCtx) {
+          const now = audioCtx.currentTime;
+          modalBank.resonators.forEach(r => {
+            r.energy = 0;
+            r.modGain.gain.cancelScheduledValues(now);
+            r.modGain.gain.setValueAtTime(0, now);
+          });
+        }
+        strike(0.35 + Math.random() * 0.25, Math.random() * Math.PI * 2, 1.0);
+      }
+      break;
+    }
   }
 }
 
