@@ -1853,9 +1853,10 @@ function unlockAudio() {
     const buf = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
     const src = audioCtx.createBufferSource();
     src.buffer = buf;
-    src.connect(audioCtx.destination);
+    src.connect(masterGain);
     src.start(0);
   }
+  if (typeof _startDismissed !== 'undefined' && !_startDismissed) return;
   buildModalBank();
   ensureModalBankLive();
 }
