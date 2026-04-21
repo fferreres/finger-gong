@@ -3801,7 +3801,8 @@ let audioUnlocked = false;
 
 let _dismissedAt = 0;
 function dismissStart() {
-  unlockAudio();
+  initAudio();
+  resumeAudio();
   audioUnlocked = true;
   _dismissedAt = performance.now();
   startOverlay.classList.add('hidden');
@@ -3809,13 +3810,17 @@ function dismissStart() {
   gc.classList.remove('asleep');
   gc.classList.add('waking');
   setTimeout(() => { gc.classList.remove('waking'); startOverlay.remove(); }, 1400);
-  retuneModalBank();
+  setTimeout(() => { buildModalBank(); ensureModalBankLive(); retuneModalBank(); }, 300);
 }
 startOverlay.addEventListener('touchend', (e) => {
   e.preventDefault();
+  e.stopPropagation();
   dismissStart();
 });
-startOverlay.addEventListener('click', dismissStart);
+startOverlay.addEventListener('click', (e) => {
+  e.stopPropagation();
+  dismissStart();
+});
 let rubActive = false;
 const rubState = {
   x: 0, y: 0, prevX: 0, prevY: 0,
