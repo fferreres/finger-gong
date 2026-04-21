@@ -1293,12 +1293,12 @@
       <div class="gong-stage">
         <canvas id="gong" class="asleep" width="1000" height="1000"></canvas>
         <div class="pitch-rack" id="pitch-rack">
-          <button class="pitch-pick" data-pitch="5" title="C — octave">C'</button>
+          <button class="pitch-pick active" data-pitch="5" title="C — octave">C'</button>
           <button class="pitch-pick" data-pitch="4" title="A">A</button>
           <button class="pitch-pick" data-pitch="3" title="G">G</button>
           <button class="pitch-pick" data-pitch="2" title="E">E</button>
           <button class="pitch-pick" data-pitch="1" title="D">D</button>
-          <button class="pitch-pick active" data-pitch="0" title="C — root">C</button>
+          <button class="pitch-pick" data-pitch="0" title="C — root">C</button>
         </div>
         <button class="chladni-toggle" id="chladni-toggle" title="Toggle Chladni sand visualization">Sand</button>
         <button class="sand-gear" id="sand-gear" title="Sand tuning">&#9881;</button>
@@ -1593,7 +1593,7 @@ const MATERIALS = {
 // STATE
 // ============================================================
 let gongSizeIdx = 2;
-let pitchRatio = 1.5;
+let pitchRatio = 2;
 let malletNorm = 0.5;
 let interactionMode = 'strike';
 let currentShape = 'chau';
@@ -3655,8 +3655,8 @@ spaceSlider.addEventListener('input', (e) => {
 // Tuned pitch presets — pentatonic: C D E G A C'
 const PITCH_RATIOS = [1, 9/8, 5/4, 3/2, 5/3, 2];
 const PITCH_NAMES = ['C', 'D', 'E', 'G', 'A', "C'"];
-let currentPitchIdx = 0;
-pitchRatio = PITCH_RATIOS[0];
+let currentPitchIdx = 5;
+pitchRatio = PITCH_RATIOS[5];
 
 function updatePitchRack() {
   document.querySelectorAll('.pitch-pick').forEach(btn => {
