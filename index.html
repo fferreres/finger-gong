@@ -3282,12 +3282,13 @@ function drawGong() {
   lastEnergy = lastEnergy * 0.85 + energy * 0.15;
   const glow = Math.min(1, lastEnergy * 2.5);
 
-  const halo = gctx.createRadialGradient(cx, cy, R * 0.5, cx, cy, R * 1.8);
+  const haloR = Math.min(R * 1.6, Math.min(w, h) / 2 - 1);
+  const halo = gctx.createRadialGradient(cx, cy, R * 0.5, cx, cy, haloR);
   halo.addColorStop(0, rgba(mat.halo, glow * 0.32));
-  halo.addColorStop(0.5, rgba(mat.haloDeep, glow * 0.10));
+  halo.addColorStop(0.6, rgba(mat.haloDeep, glow * 0.08));
   halo.addColorStop(1, rgba(mat.haloDeep, 0));
   gctx.fillStyle = halo;
-  gctx.beginPath(); gctx.arc(cx, cy, R * 1.8, 0, Math.PI * 2); gctx.fill();
+  gctx.beginPath(); gctx.arc(cx, cy, haloR, 0, Math.PI * 2); gctx.fill();
 
   gctx.strokeStyle = rgba(mat.rimHigh, 0.5);
   gctx.lineWidth = 1;
