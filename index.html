@@ -3797,30 +3797,23 @@ const hint = document.getElementById('hint');
 const startOverlay = document.getElementById('start-overlay');
 let firstInteraction = true;
 let audioUnlocked = false;
+let _startDismissed = false;
 
-
-let _dismissedAt = 0;
 function dismissStart() {
+  if (_startDismissed) return;
+  _startDismissed = true;
   initAudio();
   resumeAudio();
   audioUnlocked = true;
-  _dismissedAt = performance.now();
   startOverlay.classList.add('hidden');
   const gc = document.getElementById('gong');
   gc.classList.remove('asleep');
   gc.classList.add('waking');
   setTimeout(() => { gc.classList.remove('waking'); startOverlay.remove(); }, 1400);
-  setTimeout(() => { buildModalBank(); ensureModalBankLive(); retuneModalBank(); }, 300);
+  setTimeout(() => { buildModalBank(); ensureModalBankLive(); retuneModalBank(); }, 400);
 }
-startOverlay.addEventListener('touchend', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  dismissStart();
-});
-startOverlay.addEventListener('click', (e) => {
-  e.stopPropagation();
-  dismissStart();
-});
+startOverlay.addEventListener('touchend', (e) => { e.preventDefault(); dismissStart(); });
+startOverlay.addEventListener('click', dismissStart);
 let rubActive = false;
 const rubState = {
   x: 0, y: 0, prevX: 0, prevY: 0,
@@ -3944,8 +3937,8 @@ gongCanvas.addEventListener('touchstart', (e) => {
 
 gongCanvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
+  if (!_startDismissed) return;
   unlockAudio();
-  if (performance.now() - _dismissedAt < 300) return;
   if (recState === 'playing') { recStopPlayback(); }
   if (firstInteraction) { firstInteraction = false; hint.classList.add('fade'); }
   const p = pointerToGong(e);
