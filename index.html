@@ -1757,7 +1757,7 @@ function currentMasterGain() { return volumeNorm * volumeNorm * 0.5 * sizeLerp('
 function initAudio() {
   if (masterGain) return;
   masterGain = audioCtx.createGain();
-  masterGain.gain.value = currentMasterGain();
+  masterGain.gain.value = 0;
 
   const softClip = audioCtx.createWaveShaper();
   const sc = new Float32Array(8192);
@@ -1856,7 +1856,6 @@ function unlockAudio() {
     src.connect(masterGain);
     src.start(0);
   }
-  if (typeof _startDismissed !== 'undefined' && !_startDismissed) return;
   buildModalBank();
   ensureModalBankLive();
 }
@@ -3803,15 +3802,16 @@ let _startDismissed = false;
 function dismissStart() {
   if (_startDismissed) return;
   _startDismissed = true;
-  initAudio();
-  resumeAudio();
+  unlockAudio();
   audioUnlocked = true;
   startOverlay.classList.add('hidden');
   const gc = document.getElementById('gong');
   gc.classList.remove('asleep');
   gc.classList.add('waking');
   setTimeout(() => { gc.classList.remove('waking'); startOverlay.remove(); }, 1400);
-  setTimeout(() => { buildModalBank(); ensureModalBankLive(); retuneModalBank(); }, 400);
+  setTimeout(() => {
+    if (masterGain) masterGain.gain.setTargetAtTime(currentMasterGain(), audioCtx.currentTime, 0.08);
+  }, 300);
 }
 startOverlay.addEventListener('touchend', (e) => { e.preventDefault(); dismissStart(); });
 startOverlay.addEventListener('click', dismissStart);
