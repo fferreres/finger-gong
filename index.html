@@ -310,7 +310,7 @@
   }
   .dampen-btn:focus { outline: none; }
 
-  .chladni-toggle {
+  .mode-toggle {
     position: absolute;
     top: 4px;
     left: 50%;
@@ -319,39 +319,56 @@
     border: 1px solid var(--bg-panel-border);
     background: var(--control-bg);
     border-radius: 100px;
-    cursor: pointer;
     z-index: 10;
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    transition: all 0.3s ease;
-    touch-action: manipulation;
-    padding: 0 12px;
+    padding: 2px;
     user-select: none;
     -webkit-user-select: none;
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
+    touch-action: manipulation;
+    transition: border-color 0.3s ease, background 0.3s ease;
+  }
+  .mode-toggle-option {
+    position: relative;
+    z-index: 1;
+    padding: 0 16px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-family: 'Inter', sans-serif;
+    font-size: 10px;
     font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    cursor: pointer;
+    border: none;
+    background: none;
+    border-radius: 100px;
+    transition: color 0.3s ease;
     white-space: nowrap;
   }
-  .chladni-toggle:hover { background: rgba(255,255,255,0.12); color: var(--text); }
-  .chladni-toggle.active {
+  .mode-toggle-option:focus { outline: none; }
+  .mode-toggle-option.active { color: var(--gold); }
+  .mode-toggle-slider {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    height: 24px;
+    border-radius: 100px;
     background: linear-gradient(135deg, var(--btn-top), var(--btn-bot));
-    color: var(--gold);
-    box-shadow: 0 0 10px var(--btn-glow);
-    border-color: var(--btn-glow);
+    box-shadow: 0 0 8px var(--btn-glow);
+    transition: left 0.3s ease, width 0.3s ease;
+    pointer-events: none;
   }
-  .chladni-toggle:focus { outline: none; }
   @keyframes sandHint {
     0%, 100% { box-shadow: 0 0 0 rgba(200, 160, 80, 0); }
     50% { box-shadow: 0 0 14px rgba(200, 160, 80, 0.35); }
   }
-  .chladni-toggle.hinting { animation: sandHint 2.5s ease-in-out; }
+  .mode-toggle.hinting { animation: sandHint 2.5s ease-in-out; }
 
   /* ==========================================================
      RECORDING TRANSPORT
@@ -447,9 +464,8 @@
 
   .sand-gear {
     position: absolute;
-    top: 4px;
-    left: 50%;
-    transform: translateX(calc(-50% + 46px));
+    top: 6px;
+    left: calc(50% + 88px);
     width: 22px; height: 22px;
     border: 1px solid var(--bg-panel-border);
     background: var(--control-bg);
@@ -471,7 +487,7 @@
   .sand-gear:hover { color: var(--gold); background: rgba(255,255,255,0.12); }
   .sand-gear.active { color: var(--gold); border-color: var(--btn-glow); }
   .sand-gear:focus { outline: none; }
-  .sand-reset { transform: translateX(calc(-50% + 72px)) !important; font-size: 14px !important; }
+  .sand-reset { left: calc(50% + 114px) !important; font-size: 14px !important; }
 
   .sand-debug {
     position: fixed;
@@ -830,7 +846,7 @@
   .start-overlay ~ .container .controls-panel,
   .start-overlay ~ .container .pitch-rack,
   .start-overlay ~ .container .mallet-rack,
-  .start-overlay ~ .container .chladni-toggle,
+  .start-overlay ~ .container .mode-toggle,
   .start-overlay ~ .container .sand-gear,
   .start-overlay ~ .container .waveform-bar,
   .start-overlay ~ .container .rec-transport,
@@ -845,7 +861,7 @@
   .start-overlay.hidden ~ .container .controls-panel,
   .start-overlay.hidden ~ .container .pitch-rack,
   .start-overlay.hidden ~ .container .mallet-rack,
-  .start-overlay.hidden ~ .container .chladni-toggle,
+  .start-overlay.hidden ~ .container .mode-toggle,
   .start-overlay.hidden ~ .container .sand-gear,
   .start-overlay.hidden ~ .container .waveform-bar,
   .start-overlay.hidden ~ .container .rec-transport,
@@ -1048,7 +1064,7 @@
   /* Immersion mode — total darkness, just the gong */
   /* Immersion-aware transitions on chrome elements */
   header, .instrument-selectors, .controls, .skin-toggle, .info-btn,
-  .pitch-rack, .mallet-rack, .chladni-toggle,
+  .pitch-rack, .mallet-rack, .mode-toggle,
   .sand-gear, .sand-reset, .sand-debug, .rec-transport, .hint, .viz-column, footer {
     transition: opacity 0.8s ease;
   }
@@ -1072,7 +1088,7 @@
     opacity: 0 !important;
     pointer-events: none !important;
   }
-  body[data-immersion="true"] .chladni-toggle,
+  body[data-immersion="true"] .mode-toggle,
   body[data-immersion="true"] .sand-gear,
   body[data-immersion="true"] .sand-reset,
   body[data-immersion="true"] .mallet-rack,
@@ -1080,7 +1096,7 @@
     opacity: 0.3 !important;
     transition: opacity 0.3s ease !important;
   }
-  body[data-immersion="true"] .chladni-toggle:hover,
+  body[data-immersion="true"] .mode-toggle:hover,
   body[data-immersion="true"] .sand-gear:hover,
   body[data-immersion="true"] .sand-reset:hover,
   body[data-immersion="true"] .mallet-rack:hover,
@@ -1300,7 +1316,11 @@
           <button class="pitch-pick" data-pitch="1" title="D">D</button>
           <button class="pitch-pick" data-pitch="0" title="C — root">C</button>
         </div>
-        <button class="chladni-toggle" id="chladni-toggle" title="Toggle Chladni sand visualization">Sand</button>
+        <div class="mode-toggle" id="chladni-toggle">
+          <div class="mode-toggle-slider" id="mode-slider"></div>
+          <button class="mode-toggle-option active" data-mode="waves">Waves</button>
+          <button class="mode-toggle-option" data-mode="sand">Stardust</button>
+        </div>
         <button class="sand-gear" id="sand-gear" title="Sand tuning">&#9881;</button>
         <button class="sand-gear sand-reset" id="sand-reset" title="Reset sand">&#8635;</button>
         <div class="rec-transport" id="rec-transport">
@@ -4230,16 +4250,31 @@ loop();
 
 }
 
-// Chladni sand toggle
-document.getElementById('chladni-toggle').addEventListener('click', () => {
-  chladniMode = !chladniMode;
-  document.getElementById('chladni-toggle').classList.toggle('active', chladniMode);
+// Mode toggle (Waves / Stardust)
+function updateModeToggle() {
+  const toggle = document.getElementById('chladni-toggle');
+  const opts = toggle.querySelectorAll('.mode-toggle-option');
+  const slider = document.getElementById('mode-slider');
+  opts.forEach(o => o.classList.toggle('active', chladniMode ? o.dataset.mode === 'sand' : o.dataset.mode === 'waves'));
+  const activeOpt = toggle.querySelector('.mode-toggle-option.active');
+  if (activeOpt && slider) {
+    slider.style.left = activeOpt.offsetLeft + 'px';
+    slider.style.width = activeOpt.offsetWidth + 'px';
+  }
   document.getElementById('sand-gear').classList.toggle('visible', chladniMode);
   document.getElementById('sand-reset').classList.toggle('visible', chladniMode);
   if (!chladniMode) {
     document.getElementById('sand-debug').classList.remove('visible');
     document.getElementById('sand-gear').classList.remove('active');
   }
+}
+document.getElementById('chladni-toggle').addEventListener('click', (e) => {
+  const opt = e.target.closest('.mode-toggle-option');
+  if (!opt) return;
+  const wantSand = opt.dataset.mode === 'sand';
+  if (wantSand === chladniMode) return;
+  chladniMode = wantSand;
+  updateModeToggle();
   if (chladniMode) {
     chladniEnvelope.fill(0);
     initSandParticles();
@@ -4247,6 +4282,7 @@ document.getElementById('chladni-toggle').addEventListener('click', () => {
     sandTransition = 0;
   }
 });
+requestAnimationFrame(() => updateModeToggle());
 document.getElementById('sand-reset').addEventListener('click', () => {
   if (chladniMode) { chladniEnvelope.fill(0); initSandParticles(); sandFadeIn = 0; }
 });
@@ -4387,7 +4423,7 @@ function recRestoreSnapshot(snap) {
   }
   if (snap.chladniMode !== chladniMode) {
     chladniMode = snap.chladniMode;
-    document.getElementById('chladni-toggle').classList.toggle('active', chladniMode);
+    updateModeToggle();
     document.getElementById('sand-gear').classList.toggle('visible', chladniMode);
     document.getElementById('sand-reset').classList.toggle('visible', chladniMode);
     if (chladniMode) { chladniEnvelope.fill(0); initSandParticles(); sandFadeIn = 0; sandTransition = 0; }
