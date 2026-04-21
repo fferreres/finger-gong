@@ -3845,10 +3845,21 @@ function applyHealingPreset(idx) {
     inches: 34, decay: 1.4, scale: 0.88, vol: 1.0,
     label: preset.freq + 'Hz',
   };
-  SIZE_MORPH_DURATION = 0.8;
-  sizeMorphT = 0;
+  sizeMorphT = 1;
   updateGongDisplay();
   retuneModalBank();
+  if (modalBank && audioCtx) {
+    const now = audioCtx.currentTime;
+    const snapAt = now + 0.025;
+    modalBank.resonators.forEach(r => {
+      r.osc1.frequency.cancelScheduledValues(now);
+      r.osc1.frequency.setValueAtTime(r.osc1.frequency.value, now);
+      r.osc1.frequency.setValueAtTime(r.freq, snapAt);
+      r.osc2.frequency.cancelScheduledValues(now);
+      r.osc2.frequency.setValueAtTime(r.osc2.frequency.value, now);
+      r.osc2.frequency.setValueAtTime(r.freq * (1 - 0.004 * 0.7), snapAt);
+    });
+  }
   if (masterGain && audioCtx) {
     masterGain.gain.setTargetAtTime(currentMasterGain(), audioCtx.currentTime, 0.05);
   }
@@ -3896,30 +3907,41 @@ function updateBlissHints() {
 }
 
 function setHealingMode(enabled) {
+  const wasExcited = modalBank && modalBank.resonators.some(r => r.energy > 1e-4);
+  if (modalBank) {
+    modalBank.resonators.forEach(r => { r.energy = 0; });
+  }
   healingMode = enabled;
   document.body.setAttribute('data-healing', enabled ? 'true' : 'false');
   updateTuningToggle();
   updatePitchRackLabels();
   updateBlissHints();
-  if (enabled) {
-    applyHealingPreset(currentHealingIdx);
-  } else {
-    healingTarget = null;
-    pitchRatio = PITCH_RATIOS[currentPitchIdx];
-    sizeMorphFrom = {
-      inches: sizeLerp('inches'),
-      baseFreq: sizeLerp('baseFreq'),
-      decay: sizeLerp('decay'),
-      scale: sizeLerp('scale'),
-      vol: sizeLerp('vol'),
-    };
-    SIZE_MORPH_DURATION = 1.5;
-    sizeMorphT = 0;
-    updateGongDisplay();
-    retuneModalBank();
-    if (masterGain && audioCtx) {
-      masterGain.gain.setTargetAtTime(currentMasterGain(), audioCtx.currentTime, 0.05);
+  const applyRetune = () => {
+    if (enabled) {
+      applyHealingPreset(currentHealingIdx);
+    } else {
+      healingTarget = null;
+      pitchRatio = PITCH_RATIOS[currentPitchIdx];
+      sizeMorphFrom = {
+        inches: sizeLerp('inches'),
+        baseFreq: sizeLerp('baseFreq'),
+        decay: sizeLerp('decay'),
+        scale: sizeLerp('scale'),
+        vol: sizeLerp('vol'),
+      };
+      SIZE_MORPH_DURATION = 1.5;
+      sizeMorphT = 0;
+      updateGongDisplay();
+      retuneModalBank();
+      if (masterGain && audioCtx) {
+        masterGain.gain.setTargetAtTime(currentMasterGain(), audioCtx.currentTime, 0.05);
+      }
     }
+  };
+  if (wasExcited) {
+    setTimeout(applyRetune, 80);
+  } else {
+    applyRetune();
   }
 }
 
@@ -3939,19 +3961,21 @@ document.getElementById('pitch-rack').addEventListener('click', (e) => {
 
   if (healingMode) {
     if (newIdx === currentHealingIdx) return;
+    const wasExcited = modalBank && modalBank.resonators.some(r => r.energy > 1e-4);
     currentHealingIdx = newIdx;
     updatePitchRack();
-    applyHealingPreset(currentHealingIdx);
     recPushEvent({ type: 'control', key: 'healingPreset', value: newIdx });
-    if (modalBank && audioCtx) {
-      const now = audioCtx.currentTime;
-      modalBank.resonators.forEach(r => {
-        r.energy = 0;
-        r.modGain.gain.cancelScheduledValues(now);
-        r.modGain.gain.setValueAtTime(0, now);
-      });
+    if (modalBank) {
+      modalBank.resonators.forEach(r => { r.energy = 0; });
     }
-    strike(0.35 + Math.random() * 0.25, Math.random() * Math.PI * 2, 1.0);
+    const doRetune = () => {
+      applyHealingPreset(currentHealingIdx);
+    };
+    if (wasExcited) {
+      setTimeout(doRetune, 80);
+    } else {
+      doRetune();
+    }
     return;
   }
 
