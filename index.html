@@ -141,15 +141,6 @@
   .container { max-width: 1280px; margin: 0 auto; }
   header { text-align: center; margin-bottom: 32px; }
 
-  .eyebrow {
-    font-size: 11px;
-    letter-spacing: 0.32em;
-    text-transform: uppercase;
-    color: var(--text-faint);
-    margin-bottom: 14px;
-    font-weight: 400;
-  }
-
   h1 {
     font-family: 'Cormorant Garamond', Georgia, serif;
     font-weight: 300;
@@ -160,16 +151,6 @@
     margin-bottom: 12px;
   }
   h1 em { font-style: italic; color: var(--bronze-light); }
-
-  .subtitle {
-    font-size: 13px;
-    color: var(--text-dim);
-    font-weight: 300;
-    letter-spacing: 0.02em;
-    max-width: 620px;
-    margin: 0 auto;
-    line-height: 1.6;
-  }
 
   /* ==========================================================
      SKIN TOGGLE — three swatches, top-right of the viewport
@@ -224,12 +205,22 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .gong-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 600px;
   }
 
   .gong-stage {
     position: relative;
-    width: 100%;
-    max-width: 520px;
+    flex: 1;
+    min-width: 0;
     aspect-ratio: 1 / 1;
   }
 
@@ -244,16 +235,13 @@
   }
 
   .pitch-rack {
-    position: absolute;
-    left: -6px;
-    top: 50%;
-    transform: translateY(-50%);
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 6px;
     z-index: 10;
     touch-action: manipulation;
+    flex-shrink: 0;
   }
   .pitch-pick {
     width: 34px;
@@ -683,16 +671,13 @@
   .sd-preset-btn:hover { color: #e0c070; }
 
   .mallet-rack {
-    position: absolute;
-    right: -6px;
-    top: 50%;
-    transform: translateY(-50%);
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 6px;
     z-index: 10;
     touch-action: manipulation;
+    flex-shrink: 0;
   }
   .mallet-pick {
     width: 34px;
@@ -798,7 +783,11 @@
     border-radius: 2px;
     gap: 2px;
     transition: background 0.4s ease, border-color 0.4s ease;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
+  .selector-buttons::-webkit-scrollbar { display: none; }
 
   .selector-btn {
     flex: 1;
@@ -824,6 +813,91 @@
 
   .selector-btn:hover:not(.active) { color: var(--text); }
   .selector-btn:focus { outline: none; }
+
+  .selector-btn.locked {
+    opacity: 0.45;
+    position: relative;
+  }
+  .selector-btn.locked::after {
+    content: '✦';
+    font-size: 8px;
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    color: var(--gold);
+    opacity: 0.7;
+  }
+  .selector-btn.locked.active {
+    color: #d4a44a;
+    background: linear-gradient(180deg, rgba(212,164,74,0.15), rgba(180,130,50,0.10));
+  }
+
+  .store-toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    max-width: 300px;
+    padding: 24px 28px;
+    background: var(--bg-panel);
+    border: 1px solid var(--bg-panel-border);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 16px;
+    line-height: 1.55;
+    text-align: center;
+    z-index: 10001;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    opacity: 0;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    pointer-events: none;
+  }
+  .store-toast.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    pointer-events: auto;
+  }
+  .store-toast em { color: var(--bronze-light); font-style: italic; }
+  .store-toast b { color: var(--gold); }
+
+  .support-section {
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .support-section .info-section-title { margin-bottom: 10px; }
+  .support-btn {
+    display: block;
+    width: 100%;
+    padding: 12px 16px;
+    margin-top: 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+  }
+  .support-btn:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.14); }
+  .support-btn:active { transform: scale(0.98); }
+  .support-btn .support-label { color: var(--gold); font-weight: 500; }
+  .support-btn .support-desc { display: block; font-size: 13px; color: var(--text-dim); margin-top: 3px; font-style: italic; }
+  .support-btn.restore-btn {
+    background: none;
+    border: none;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 13px;
+    padding: 8px;
+    margin-top: 14px;
+  }
+  .support-btn.restore-btn:hover { color: var(--text); }
 
   .controls {
     width: 100%;
@@ -871,10 +945,13 @@
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 2px;
-    background: linear-gradient(to right, var(--slider-a), var(--slider-b));
+    height: 14px;
+    background: transparent;
+    background-image: linear-gradient(to right, var(--slider-a), var(--slider-b));
+    background-size: 100% 2px;
+    background-position: center;
+    background-repeat: no-repeat;
     outline: none;
-    border-radius: 1px;
     cursor: pointer;
     transition: background 0.4s ease;
   }
@@ -934,7 +1011,7 @@
     position: fixed;
     inset: 0;
     z-index: 9999;
-    background: rgba(0, 0, 0, 0.65);
+    background: var(--bg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1092,55 +1169,49 @@
     font-weight: 300;
   }
 
-  footer {
-    text-align: center;
-    font-size: 11px;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: var(--text-faint);
-    margin-top: 24px;
-    padding-top: 24px;
-    border-top: 1px solid var(--bg-panel-border);
-    transition: border-color 0.4s ease;
-  }
-
-  footer span { margin: 0 14px; }
-
   .zen-btn { display: none; }
 
   @media (orientation: landscape) {
-    body { padding: 8px 24px env(safe-area-inset-bottom, 8px); }
-    header { margin-bottom: 6px; }
-    h1 { font-size: clamp(1.4rem, 3vw, 2.5rem); }
-    .eyebrow { margin-bottom: 6px; }
-    .subtitle { font-size: 12px; margin-bottom: 0; }
-    .gong-stage { max-width: min(520px, 38vh); }
-    .controls { max-width: min(460px, 38vh); margin-top: 6px; gap: 8px 20px; }
-    .instrument-selectors { max-width: min(460px, 38vh); margin-top: 6px; gap: 6px; }
+    body { padding: 8px 24px env(safe-area-inset-bottom, 8px); display: flex; flex-direction: column; justify-content: center; min-height: 100dvh; }
+    header { display: none; }
+    .container { width: 100%; }
+    .main-layout { gap: 24px; align-items: center; }
+    .gong-stage { max-height: calc(100vh - 120px); max-width: calc(100vh - 120px); }
+    .pitch-pick, .mallet-pick { width: 28px; height: 28px; }
+    .mp-label { font-size: 8px; }
+    .pitch-pick { font-size: 10px; }
+    .controls { margin-top: 6px; gap: 8px 20px; }
+    .instrument-selectors { margin-top: 6px; gap: 6px; }
     .viz-panel { padding: 10px 16px 10px; }
     .viz-canvas-wrap { height: 90px; }
     .viz-canvas-wrap.square { height: 150px; }
     .viz-header { margin-bottom: 6px; }
-    .viz-caption { font-size: 10.5px; }
-    .main-layout { gap: 24px; }
+    .viz-caption { display: none; }
     .hint { margin-top: 8px; }
-    footer { padding: 8px 0; margin-top: 12px; }
   }
 
   @media (max-width: 1100px) {
-    body { padding: 24px 14px 48px; }
+    body { padding: 24px 28px 48px; }
     .main-layout { grid-template-columns: 1fr; gap: 24px; }
     .gong-column { align-items: center; }
     .viz-column { max-width: 520px; width: 100%; margin: 0 auto; }
     header { margin-bottom: 24px; }
     h1 { font-size: 1.9rem; }
-    .subtitle { font-size: 12px; }
     .skin-toggle { top: 14px; right: 14px; padding: 5px 6px; gap: 6px; }
     .skin-btn { width: 16px; height: 16px; }
   }
 
+  @media (orientation: landscape) and (max-width: 1100px) {
+    .main-layout { grid-template-columns: minmax(0, 0.95fr) minmax(0, 1fr); }
+    .viz-column { max-width: none; margin: 0; }
+    body { padding: 8px 24px env(safe-area-inset-bottom, 8px); }
+  }
+
   @media (max-width: 600px) {
-    .gong-stage { max-width: 360px; }
+    .gong-area { max-width: 100%; gap: 2px; }
+    .pitch-pick, .mallet-pick { width: 28px; height: 28px; }
+    .mp-label { font-size: 8px; }
+    .pitch-pick { font-size: 10px; }
     .controls { max-width: 360px; gap: 22px; }
     .instrument-selectors { max-width: 360px; }
     .selector-label { flex: 0 0 46px; font-size: 9.5px; }
@@ -1149,17 +1220,14 @@
 
   @media (orientation: portrait) and (max-width: 1100px) {
     .viz-column { display: none; }
-    .eyebrow { display: none; }
-    .subtitle { display: none; }
-    footer { display: none; }
     .hint { display: none; }
     header { margin-bottom: 8px; }
     h1 { font-size: 1.6rem; }
     .skin-toggle { top: auto; bottom: 24px; right: 24px; }
     body { height: 100dvh; display: flex; flex-direction: column; justify-content: center; padding-top: 0; padding-bottom: 0; }
-    .gong-stage { max-width: 85vw; }
-    .controls { max-width: 66vw; gap: 14px 20px; }
-    .instrument-selectors { max-width: 66vw; gap: 8px; }
+    .gong-area { max-width: 100%; }
+    .controls { max-width: 100%; gap: 14px 20px; }
+    .instrument-selectors { max-width: 100%; gap: 8px; }
     .selector-btn { font-size: 16px; padding: 5px 4px; }
     .selector-label { font-size: 11px; }
     .control-name { font-size: 11px; }
@@ -1190,7 +1258,7 @@
     body[data-zen="true"] .controls,
     body[data-zen="true"] .skin-toggle { display: none !important; }
 
-    body[data-zen="true"] .gong-stage { max-width: 95vw; }
+    body[data-zen="true"] .gong-area { max-width: 100vw; }
 
     body[data-zen="true"] .zen-btn { opacity: 0.3; }
     body[data-zen="true"] .zen-btn:hover { opacity: 1; }
@@ -1200,7 +1268,7 @@
   /* Immersion-aware transitions on chrome elements */
   header, .instrument-selectors, .controls, .skin-toggle,
   .pitch-rack, .mallet-rack, .mode-toggle,
-  .sand-gear, .sand-reset, .sand-debug, .rec-transport, .hint, .viz-column, footer {
+  .sand-gear, .sand-reset, .sand-debug, .rec-transport, .hint, .viz-column {
     transition: opacity 0.8s ease;
   }
 
@@ -1217,8 +1285,7 @@
   body[data-immersion="true"] .pitch-rack,
   body[data-immersion="true"] .sand-debug,
   body[data-immersion="true"] .hint,
-  body[data-immersion="true"] .viz-column,
-  body[data-immersion="true"] footer {
+  body[data-immersion="true"] .viz-column {
     opacity: 0 !important;
     pointer-events: none !important;
   }
@@ -1372,6 +1439,7 @@
 </style>
 </head>
 <body data-skin="hearth">
+<script>(function(){var s=localStorage.getItem('skin');if(s)document.body.dataset.skin=s})();</script>
 
 <div class="start-overlay" id="start-overlay">
   <div class="start-whisper">Touch to Awaken</div>
@@ -1408,6 +1476,28 @@
       <p>Behind the gong surface, a <em>140×140 finite-difference wave simulation</em> runs in real time — a 2D physics engine computing how energy ripples across the disc after each strike. The visual shimmer on the metal is the wave field itself.</p>
     </div>
 
+    <div class="info-section support-section" id="support-section">
+      <div class="info-section-title">Support this instrument</div>
+      <p>Every sound, every grain of sand, every ripple — built from scratch with care. If Finger Gong resonates with you, here are ways to keep it ringing.</p>
+      <button class="support-btn" id="buy-thankium" onclick="purchaseFromStore('thankium')">
+        <span class="support-label">✦ Unlock Thankium</span>
+        <span class="support-desc">A rare alloy that resonates with gratitude. Longer sustain, warm golden shimmer, and — legend says — good fortune.</span>
+      </button>
+      <button class="support-btn" onclick="purchaseFromStore('tip.small')">
+        <span class="support-label">Finger Cymbal</span>
+        <span class="support-desc">A bright little ting — $2.99</span>
+      </button>
+      <button class="support-btn" onclick="purchaseFromStore('tip.medium')">
+        <span class="support-label">Singing Bowl</span>
+        <span class="support-desc">A warm, sustained hum — $6.99</span>
+      </button>
+      <button class="support-btn" onclick="purchaseFromStore('tip.large')">
+        <span class="support-label">Temple Gong</span>
+        <span class="support-desc">A mighty resonance — $14.99</span>
+      </button>
+      <button class="support-btn restore-btn" onclick="purchaseFromStore('restore')">Restore purchases</button>
+    </div>
+
   </div>
 </div>
 
@@ -1420,16 +1510,13 @@
 
 <div class="container">
   <header>
-    <div class="eyebrow">An Interactive Study</div>
     <h1>Finger <em>Gong</em></h1>
-    <p class="subtitle">A gong isn't one sound but hundreds, bouncing inside a metal disc. Shape sets the partials; alloy sets the ring. <em style="font-family:'Cormorant Garamond',serif;color:var(--bronze-light)">Tap</em> for a bloom. <em style="font-family:'Cormorant Garamond',serif;color:var(--bronze-light)">Hold and drag</em> to charge the modes until they sing — and watch their geometry surface.</p>
   </header>
 
   <div class="main-layout">
     <div class="gong-column">
 
-      <div class="gong-stage">
-        <canvas id="gong" class="asleep" width="1000" height="1000"></canvas>
+      <div class="gong-area">
         <div class="pitch-rack" id="pitch-rack">
           <div class="tuning-toggle" id="tuning-toggle">
             <div class="tuning-toggle-slider" id="tuning-slider"></div>
@@ -1443,21 +1530,24 @@
           <button class="pitch-pick" data-pitch="1" title="D">D</button>
           <button class="pitch-pick" data-pitch="0" title="C — root">C</button>
         </div>
-        <div class="mode-toggle" id="chladni-toggle">
-          <div class="mode-toggle-slider" id="mode-slider"></div>
-          <button class="mode-toggle-option active" data-mode="waves">Waves</button>
-          <button class="mode-toggle-option" data-mode="sand">Stardust</button>
-        </div>
-        <button class="sand-gear" id="sand-gear" title="Sand tuning">&#9881;</button>
-        <button class="sand-gear sand-reset" id="sand-reset" title="Reset sand">&#8635;</button>
-        <div class="rec-transport" id="rec-transport">
-          <button class="zen-btn" id="zen-toggle" title="Zen mode" aria-label="Toggle zen mode">⌄</button>
-          <div class="rec-divider"></div>
-          <button class="dampen-btn" id="dampen-btn" title="Hold to dampen">◎</button>
-          <div class="rec-divider"></div>
-          <button class="rec-btn" id="rec-record" title="Record" aria-label="Record"></button>
-          <button class="rec-btn" id="rec-play" title="Play (double-tap to loop)" aria-label="Play" disabled>&#9654;</button>
-          <button class="rec-btn" id="rec-clear" title="Clear" aria-label="Clear recording" disabled>&#10005;</button>
+        <div class="gong-stage">
+          <canvas id="gong" class="asleep" width="1000" height="1000"></canvas>
+          <div class="mode-toggle" id="chladni-toggle">
+            <div class="mode-toggle-slider" id="mode-slider"></div>
+            <button class="mode-toggle-option active" data-mode="waves">Waves</button>
+            <button class="mode-toggle-option" data-mode="sand">Stardust</button>
+          </div>
+          <button class="sand-gear" id="sand-gear" title="Sand tuning">&#9881;</button>
+          <button class="sand-gear sand-reset" id="sand-reset" title="Reset sand">&#8635;</button>
+          <div class="rec-transport" id="rec-transport">
+            <button class="zen-btn" id="zen-toggle" title="Zen mode" aria-label="Toggle zen mode">⌄</button>
+            <div class="rec-divider"></div>
+            <button class="dampen-btn" id="dampen-btn" title="Hold to dampen">◎</button>
+            <div class="rec-divider"></div>
+            <button class="rec-btn" id="rec-record" title="Record" aria-label="Record"></button>
+            <button class="rec-btn" id="rec-play" title="Play (double-tap to loop)" aria-label="Play" disabled>&#9654;</button>
+            <button class="rec-btn" id="rec-clear" title="Clear" aria-label="Clear recording" disabled>&#10005;</button>
+          </div>
         </div>
         <div class="mallet-rack" id="mallet-rack">
           <div class="tuning-toggle" id="mallet-toggle">
@@ -1491,7 +1581,8 @@
             <button class="selector-btn active" data-material="bronze">Bronze</button>
             <button class="selector-btn" data-material="brass">Brass</button>
             <button class="selector-btn" data-material="nickel">Nickel silver</button>
-            <button class="selector-btn" data-material="blission">Blission</button>
+            <button class="selector-btn" data-material="blisserite">Blisserite</button>
+            <button class="selector-btn locked" data-material="thankium" id="thankium-btn">Thankium</button>
           </div>
         </div>
       </div>
@@ -1563,13 +1654,6 @@
     </div>
   </div>
 
-  <footer>
-    <span>Shape sets the partials</span>
-    <span>·</span>
-    <span>Alloy sets the ring</span>
-    <span>·</span>
-    <span>Rubbing charges, striking ignites</span>
-  </footer>
 </div>
 
 <script>
@@ -1719,8 +1803,8 @@ const MATERIALS = {
       halo: [198, 216, 234], haloDeep: [125, 152, 184], ringDark: [30, 40, 55],
     }
   },
-  blission: {
-    label: 'Blission',
+  blisserite: {
+    label: 'Blisserite',
     decayMult: 1.25,
     noiseFreqMult: 0.75,
     noiseAmpMult: 0.65,
@@ -1732,12 +1816,25 @@ const MATERIALS = {
       halo: [185, 155, 220], haloDeep: [120, 80, 165], ringDark: [35, 20, 52],
     }
   },
+  thankium: {
+    label: 'Thankium',
+    decayMult: 1.45,
+    noiseFreqMult: 0.60,
+    noiseAmpMult: 0.50,
+    waveDamping: 0.9985,
+    palette: {
+      discHigh: [255, 220, 140], discMid: [218, 170, 75], discLow: [145, 100, 35], discEdge: [72, 48, 16],
+      rimHigh: [120, 85, 32], rimMid: [72, 48, 16], rimLow: [30, 20, 8],
+      bossHigh: [255, 238, 180], bossMid: [235, 195, 100], bossLow: [100, 72, 28],
+      halo: [248, 218, 140], haloDeep: [195, 148, 58], ringDark: [62, 42, 14],
+    }
+  },
 };
 
 // ============================================================
 // STATE
 // ============================================================
-let cachedSkin = 'hearth';
+let cachedSkin = localStorage.getItem('skin') || 'hearth';
 let gongSizeIdx = 2;
 let pitchRatio = 2;
 let malletNorm = 0.5;
@@ -4208,6 +4305,7 @@ document.querySelectorAll('#shape-buttons .selector-btn').forEach(btn => {
 document.querySelectorAll('#material-buttons .selector-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const v = btn.dataset.material;
+    if (v === 'thankium' && !thankiumUnlocked) { purchaseFromStore('thankium'); return; }
     if (v === currentMaterial) return;
     const curPal = activePalette();
     const palCopy = {};
@@ -4235,10 +4333,12 @@ document.querySelectorAll('#material-buttons .selector-btn').forEach(btn => {
 // ============================================================
 // Swaps the page palette. Paper skin warms the gong toward wood tones.
 document.querySelectorAll('.skin-btn').forEach(btn => {
+  btn.classList.toggle('active', btn.dataset.skin === cachedSkin);
   btn.addEventListener('click', () => {
     const skin = btn.dataset.skin;
     document.body.dataset.skin = skin;
     cachedSkin = skin;
+    localStorage.setItem('skin', skin);
     _paletteCacheKey = '';
     _heatLUTKey = '';
     document.querySelectorAll('.skin-btn').forEach(b =>
@@ -5180,6 +5280,63 @@ document.getElementById('rec-clear').addEventListener('click', () => {
   recUpdateUI();
 });
 recUpdateUI();
+
+// ============================================================
+// IN-APP PURCHASES — bridge to native StoreKit via WKWebView
+// ============================================================
+let thankiumUnlocked = false;
+const isNativeApp = !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.store);
+
+function purchaseFromStore(id) {
+  if (!isNativeApp) {
+    showStoreToast('Available in the iOS app');
+    return;
+  }
+  window.webkit.messageHandlers.store.postMessage(id);
+}
+
+function onThankiumUnlock(unlocked) {
+  thankiumUnlocked = unlocked;
+  const btn = document.getElementById('thankium-btn');
+  if (btn) btn.classList.toggle('locked', !unlocked);
+  const buyBtn = document.getElementById('buy-thankium');
+  if (buyBtn && unlocked) {
+    buyBtn.querySelector('.support-label').textContent = '✦ Thankium unlocked';
+    buyBtn.querySelector('.support-desc').textContent = 'You carry the resonance of gratitude. Thank you.';
+    buyBtn.onclick = null;
+    buyBtn.style.opacity = '0.6';
+    buyBtn.style.cursor = 'default';
+  }
+}
+
+function onStoreResult(action, result) {
+  if (action === 'thankium' && result === 'purchased') {
+    showStoreToast('<b>Thankium</b> is yours.<br><em>May your gongs ring true.</em>');
+  } else if (action === 'tip' && result === 'thanked') {
+    showStoreToast('<em>Thank you</em> — may your gongs ring true.');
+  } else if (action === 'restore' && result === 'restored') {
+    showStoreToast('<b>Thankium</b> restored.');
+  } else if (action === 'restore' && result === 'nothing') {
+    showStoreToast('No purchases to restore.');
+  }
+}
+
+let _toastTimer = null;
+function showStoreToast(html) {
+  let el = document.getElementById('store-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'store-toast';
+    el.className = 'store-toast';
+    document.body.appendChild(el);
+    el.addEventListener('click', () => { el.classList.remove('visible'); });
+  }
+  el.innerHTML = html;
+  clearTimeout(_toastTimer);
+  requestAnimationFrame(() => { el.classList.add('visible'); });
+  _toastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
+}
+
 </script>
 
 <div class="sand-debug" id="sand-debug">
