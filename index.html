@@ -282,27 +282,24 @@
   .pitch-pick:focus { outline: none; }
 
   .dampen-btn {
-    position: absolute;
-    bottom: 4px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     border: 1px solid var(--bg-panel-border);
     background: rgba(255,255,255,0.05);
     border-radius: 50%;
     cursor: pointer;
-    z-index: 10;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 18px;
     color: var(--text-dim);
     transition: all 0.3s ease;
     touch-action: manipulation;
     padding: 0;
     user-select: none;
     -webkit-user-select: none;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
   }
   .dampen-btn:hover { background: rgba(255,255,255,0.12); color: var(--text); }
   .dampen-btn.pressing {
@@ -354,6 +351,90 @@
     50% { box-shadow: 0 0 14px rgba(200, 160, 80, 0.35); }
   }
   .chladni-toggle.hinting { animation: sandHint 2.5s ease-in-out; }
+
+  /* ==========================================================
+     RECORDING TRANSPORT
+     ========================================================== */
+  .rec-transport {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 10;
+    touch-action: manipulation;
+  }
+  .rec-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--text-faint);
+    margin: 0 5px;
+    opacity: 0.25;
+  }
+  .rec-btn {
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--bg-panel-border);
+    background: var(--control-bg);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    color: var(--text-dim);
+    transition: all 0.3s ease;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    line-height: 1;
+  }
+  .rec-btn:hover:not(:disabled) { background: rgba(255,255,255,0.12); color: var(--text); }
+  .rec-btn:focus { outline: none; }
+  .rec-btn:disabled { opacity: 0.25; cursor: default; }
+  .rec-btn.active {
+    color: var(--gold);
+    border-color: var(--btn-glow);
+    box-shadow: 0 0 10px var(--btn-glow);
+  }
+  #rec-record {
+    font-size: 0;
+    position: relative;
+  }
+  #rec-record::after {
+    content: '';
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--text-faint);
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+  }
+  #rec-record.recording::after {
+    background: #e85040;
+    box-shadow: 0 0 8px rgba(232, 80, 64, 0.5);
+  }
+  #rec-record.recording {
+    border-color: rgba(232, 80, 64, 0.4);
+    animation: recPulse 1.5s ease-in-out infinite;
+  }
+  #rec-record.paused::after {
+    background: #d4a050;
+    box-shadow: 0 0 6px rgba(212, 160, 80, 0.4);
+  }
+  #rec-record.paused {
+    border-color: rgba(212, 160, 80, 0.3);
+  }
+  @keyframes recPulse {
+    0%, 100% { box-shadow: 0 0 0 rgba(232, 80, 64, 0); }
+    50% { box-shadow: 0 0 12px rgba(232, 80, 64, 0.4); }
+  }
+  #rec-loop { font-size: 22px; }
+  #rec-play { font-size: 16px; padding-left: 2px; }
+
   .sand-spark {
     position: absolute;
     border-radius: 50%;
@@ -748,11 +829,10 @@
   .start-overlay ~ .container .controls-panel,
   .start-overlay ~ .container .pitch-rack,
   .start-overlay ~ .container .mallet-rack,
-  .start-overlay ~ .container .dampen-btn,
   .start-overlay ~ .container .chladni-toggle,
   .start-overlay ~ .container .sand-gear,
   .start-overlay ~ .container .waveform-bar,
-  .start-overlay ~ .zen-btn,
+  .start-overlay ~ .container .rec-transport,
   .start-overlay ~ .info-btn,
   .start-overlay ~ .skin-toggle {
     opacity: 0;
@@ -764,11 +844,10 @@
   .start-overlay.hidden ~ .container .controls-panel,
   .start-overlay.hidden ~ .container .pitch-rack,
   .start-overlay.hidden ~ .container .mallet-rack,
-  .start-overlay.hidden ~ .container .dampen-btn,
   .start-overlay.hidden ~ .container .chladni-toggle,
   .start-overlay.hidden ~ .container .sand-gear,
   .start-overlay.hidden ~ .container .waveform-bar,
-  .start-overlay.hidden ~ .zen-btn,
+  .start-overlay.hidden ~ .container .rec-transport,
   .start-overlay.hidden ~ .info-btn,
   .start-overlay.hidden ~ .skin-toggle {
     opacity: 1;
@@ -935,12 +1014,8 @@
     .control-value { font-size: 16px; }
     .zen-btn {
       display: flex;
-      position: fixed;
-      bottom: 24px;
-      left: 24px;
-      z-index: 100;
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       border: 1px solid var(--bg-panel-border);
       background: var(--control-bg);
@@ -972,8 +1047,8 @@
   /* Immersion mode — total darkness, just the gong */
   /* Immersion-aware transitions on chrome elements */
   header, .instrument-selectors, .controls, .skin-toggle, .info-btn,
-  .pitch-rack, .mallet-rack, .dampen-btn, .chladni-toggle,
-  .sand-gear, .sand-reset, .sand-debug, .hint, .viz-column, footer {
+  .pitch-rack, .mallet-rack, .chladni-toggle,
+  .sand-gear, .sand-reset, .sand-debug, .rec-transport, .hint, .viz-column, footer {
     transition: opacity 0.8s ease;
   }
 
@@ -999,16 +1074,16 @@
   body[data-immersion="true"] .chladni-toggle,
   body[data-immersion="true"] .sand-gear,
   body[data-immersion="true"] .sand-reset,
-  body[data-immersion="true"] .dampen-btn,
-  body[data-immersion="true"] .mallet-rack {
+  body[data-immersion="true"] .mallet-rack,
+  body[data-immersion="true"] .rec-transport {
     opacity: 0.3 !important;
     transition: opacity 0.3s ease !important;
   }
   body[data-immersion="true"] .chladni-toggle:hover,
   body[data-immersion="true"] .sand-gear:hover,
   body[data-immersion="true"] .sand-reset:hover,
-  body[data-immersion="true"] .dampen-btn:hover,
-  body[data-immersion="true"] .mallet-rack:hover {
+  body[data-immersion="true"] .mallet-rack:hover,
+  body[data-immersion="true"] .rec-transport:hover {
     opacity: 0.8 !important;
   }
   body[data-immersion="true"] .container {
@@ -1162,7 +1237,6 @@
   <div class="start-whisper">touch to awaken</div>
 </div>
 
-<button class="zen-btn" id="zen-toggle" title="Zen mode" aria-label="Toggle zen mode">—</button>
 <button class="info-btn" id="info-toggle" title="About" aria-label="About this instrument">i</button>
 
 <div class="info-panel" id="info-panel">
@@ -1220,15 +1294,24 @@
         <div class="pitch-rack" id="pitch-rack">
           <button class="pitch-pick" data-pitch="5" title="C — octave">C'</button>
           <button class="pitch-pick" data-pitch="4" title="A">A</button>
-          <button class="pitch-pick active" data-pitch="3" title="G">G</button>
+          <button class="pitch-pick" data-pitch="3" title="G">G</button>
           <button class="pitch-pick" data-pitch="2" title="E">E</button>
           <button class="pitch-pick" data-pitch="1" title="D">D</button>
-          <button class="pitch-pick" data-pitch="0" title="C — root">C</button>
+          <button class="pitch-pick active" data-pitch="0" title="C — root">C</button>
         </div>
-        <button class="dampen-btn" id="dampen-btn" title="Hold to dampen">◎</button>
         <button class="chladni-toggle" id="chladni-toggle" title="Toggle Chladni sand visualization">Sand</button>
         <button class="sand-gear" id="sand-gear" title="Sand tuning">&#9881;</button>
         <button class="sand-gear sand-reset" id="sand-reset" title="Reset sand">&#8635;</button>
+        <div class="rec-transport" id="rec-transport">
+          <button class="zen-btn" id="zen-toggle" title="Zen mode" aria-label="Toggle zen mode">—</button>
+          <div class="rec-divider"></div>
+          <button class="dampen-btn" id="dampen-btn" title="Hold to dampen">◎</button>
+          <div class="rec-divider"></div>
+          <button class="rec-btn" id="rec-record" title="Record" aria-label="Record"></button>
+          <button class="rec-btn" id="rec-play" title="Play" aria-label="Play" disabled>&#9654;</button>
+          <button class="rec-btn" id="rec-clear" title="Clear" aria-label="Clear recording" disabled>&#10005;</button>
+          <button class="rec-btn" id="rec-loop" title="Loop" aria-label="Toggle loop">&#10227;</button>
+        </div>
         <div class="mallet-rack" id="mallet-rack">
           <button class="mallet-pick" data-size="0" data-mallet="0" title="Wooden stick"></button>
           <button class="mallet-pick" data-size="1" data-mallet="1" title="Light felt"></button>
@@ -3480,6 +3563,7 @@ gongSlider.addEventListener('input', (e) => {
   sizeMorphT = 0;
   updateGongDisplay();
   retuneModalBank();
+  recPushEvent({ type: 'control', key: 'gongSize', value: newIdx });
   if (masterGain && audioCtx) {
     masterGain.gain.setTargetAtTime(currentMasterGain(), audioCtx.currentTime, 0.05);
   }
@@ -3487,6 +3571,7 @@ gongSlider.addEventListener('input', (e) => {
 malletSlider.addEventListener('input', (e) => {
   malletNorm = parseFloat(e.target.value);
   updateMalletDisplay();
+  recPushEvent({ type: 'control', key: 'mallet', value: malletNorm });
 });
 
 const MALLET_NORMS = [0.08, 0.28, 0.5, 0.72, 0.92];
@@ -3497,6 +3582,7 @@ document.getElementById('mallet-rack').addEventListener('click', (e) => {
   malletNorm = MALLET_NORMS[idx];
   malletSlider.value = malletNorm;
   updateMalletDisplay();
+  recPushEvent({ type: 'control', key: 'mallet', value: malletNorm });
 });
 
 const sustainSlider = document.getElementById('sustain-slider');
@@ -3509,6 +3595,7 @@ function updateSustainDisplay() {
 sustainSlider.addEventListener('input', (e) => {
   sustainNorm = parseFloat(e.target.value);
   updateSustainDisplay();
+  recPushEvent({ type: 'control', key: 'sustain', value: sustainNorm });
 });
 
 const volumeSlider = document.getElementById('volume-slider');
@@ -3544,8 +3631,8 @@ spaceSlider.addEventListener('input', (e) => {
 // Tuned pitch presets — pentatonic: C D E G A C'
 const PITCH_RATIOS = [1, 9/8, 5/4, 3/2, 5/3, 2];
 const PITCH_NAMES = ['C', 'D', 'E', 'G', 'A', "C'"];
-let currentPitchIdx = 3;
-pitchRatio = PITCH_RATIOS[3];
+let currentPitchIdx = 0;
+pitchRatio = PITCH_RATIOS[0];
 
 function updatePitchRack() {
   document.querySelectorAll('.pitch-pick').forEach(btn => {
@@ -3560,6 +3647,7 @@ document.getElementById('pitch-rack').addEventListener('click', (e) => {
   currentPitchIdx = newIdx;
   pitchRatio = PITCH_RATIOS[currentPitchIdx];
   updatePitchRack();
+  recPushEvent({ type: 'control', key: 'pitch', value: newIdx });
   if (modalBank && audioCtx) {
     const now = audioCtx.currentTime;
     modalBank.resonators.forEach(r => {
@@ -3594,9 +3682,11 @@ function startDampen(e) {
   dampenActive = true;
   dampenStart = performance.now();
   dampenBtn.classList.add('pressing');
+  recPushEvent({ type: 'dampenStart' });
 }
 function endDampen(e) {
   if (!dampenActive) return;
+  recPushEvent({ type: 'dampenEnd' });
   dampenActive = false;
   dampenBtn.classList.remove('pressing');
 }
@@ -3621,6 +3711,7 @@ document.querySelectorAll('#shape-buttons .selector-btn').forEach(btn => {
     document.querySelectorAll('#shape-buttons .selector-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.shape === currentShape));
     retuneModalBank();
+    recPushEvent({ type: 'control', key: 'shape', value: v });
   });
 });
 document.querySelectorAll('#material-buttons .selector-btn').forEach(btn => {
@@ -3643,6 +3734,7 @@ document.querySelectorAll('#material-buttons .selector-btn').forEach(btn => {
     document.querySelectorAll('#material-buttons .selector-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.material === currentMaterial));
     retuneModalBank();
+    recPushEvent({ type: 'control', key: 'material', value: v });
   });
 });
 
@@ -3743,6 +3835,7 @@ function handleStrikeAt(p, contactSize) {
   const force = contactForce(contactSize || 0);
   const strikeTheta = Math.atan2(p.gy - gridCy, p.gx - gridCx);
   strike(p.strikeR, strikeTheta, force);
+  recPushEvent({ type: 'strike', r: p.strikeR, theta: strikeTheta, force });
   const strength = (0.85 + (1 - p.strikeR) * 0.25) * malletEnergy() * force;
   injectStrike(p.gx, p.gy, strength);
   recentStrikes.push({ x: p.px, y: p.py, t: performance.now() });
@@ -3766,6 +3859,7 @@ function beginRub(e, p) {
   rubState.outside = false;
   gongCanvas.style.cursor = 'grabbing';
   try { gongCanvas.setPointerCapture(e.pointerId); } catch (err) {}
+  recPushEvent({ type: 'rubStart', r: p.strikeR, theta: Math.atan2(p.gy - gridCy, p.gx - gridCx) });
 }
 
 function moveRub(e) {
@@ -3798,10 +3892,12 @@ function moveRub(e) {
   rubState.lastMoveT = now;
   const cs = Math.max(e.width || 0, e.height || 0);
   rubState.contactForce = contactForce(cs);
+  recPushEvent({ type: 'rubMove', r: rubState.strikeR, theta: Math.atan2(rubState.gy - gridCy, rubState.gx - gridCx), pressure: rubState.pressure, contactForce: rubState.contactForce });
 }
 
 function endRub() {
   if (!rubActive) return;
+  recPushEvent({ type: 'rubEnd' });
   rubActive = false;
   rubState.velocity = 0;
   interactionMode = 'strike';
@@ -3818,6 +3914,7 @@ gongCanvas.addEventListener('touchstart', (e) => {
 gongCanvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   unlockAudio();
+  if (recState === 'playing') { recStopPlayback(); }
   if (firstInteraction) { firstInteraction = false; hint.classList.add('fade'); }
   const p = pointerToGong(e);
   if (!p.inside) return;
@@ -3963,6 +4060,7 @@ function loop() {
   drawRadial();
 
   if (!chladniMode && sandTransition <= 0) sandHintUpdate(dt);
+  if (recState === 'playing') recPlaybackTick();
 
   } catch (e) { console.error('loop error:', e); }
   requestAnimationFrame(loop);
@@ -4128,6 +4226,406 @@ document.getElementById('sand-gear').addEventListener('click', () => {
   panel.classList.toggle('visible', show);
   gear.classList.toggle('active', show);
 });
+
+// ============================================================
+// RECORDING / PLAYBACK
+// ============================================================
+// States: 'idle' (nothing recorded), 'recording', 'paused' (has data, can append), 'playing'
+let recState = 'idle';
+let recEvents = [];
+let recStartT = 0;
+let recElapsed = 0;
+let recSnapshot = null;
+let recPlayIdx = 0;
+let recPlayStartT = 0;
+let recLoopEnabled = false;
+let recPlayRubActive = false;
+let _recLastRubT = 0;
+
+function recPushEvent(evt) {
+  if (recState !== 'recording') return;
+  evt.t = performance.now() - recStartT;
+  if (evt.t > 120000) { recPauseRecording(); return; }
+  if (evt.type === 'rubMove') {
+    if (evt.t - _recLastRubT < 16) return;
+    _recLastRubT = evt.t;
+  }
+  recEvents.push(evt);
+}
+
+function recCaptureSnapshot() {
+  return {
+    currentShape, currentMaterial, gongSizeIdx, currentPitchIdx,
+    pitchRatio, malletNorm, sustainNorm, spaceNorm, volumeNorm, chladniMode,
+  };
+}
+
+function recBeginRecording() {
+  recCleanupPlayback();
+  recEvents = [];
+  recElapsed = 0;
+  recStartT = performance.now();
+  _recLastRubT = 0;
+  recSnapshot = recCaptureSnapshot();
+  recState = 'recording';
+  recUpdateUI();
+}
+
+function recResumeRecording() {
+  recCleanupPlayback();
+  recStartT = performance.now() - recElapsed;
+  _recLastRubT = recElapsed;
+  recState = 'recording';
+  recUpdateUI();
+}
+
+function recPauseRecording() {
+  if (recState !== 'recording') return;
+  recElapsed = performance.now() - recStartT;
+  recState = 'paused';
+  recUpdateUI();
+}
+
+function recSilenceGong() {
+  if (!modalBank) return;
+  const now = audioCtx.currentTime;
+  modalBank.resonators.forEach(r => {
+    r.energy = 0;
+    r.modGain.gain.cancelScheduledValues(now);
+    r.modGain.gain.setValueAtTime(0, now);
+  });
+  for (let i = 0; i < GRID * GRID; i++) { u[i] = 0; uPrev[i] = 0; }
+}
+
+function recCleanupPlayback() {
+  if (recState !== 'playing') return;
+  if (recPlayRubActive) { rubActive = false; interactionMode = 'strike'; recPlayRubActive = false; }
+  if (dampenActive) { dampenActive = false; dampenBtn.classList.remove('pressing'); }
+}
+
+function recRestoreSnapshot(snap) {
+  if (snap.currentShape !== currentShape) {
+    shapeFrom = currentShape;
+    currentShape = snap.currentShape;
+    shapeMorphT = 0; _morphedT = -1;
+    document.querySelectorAll('#shape-buttons .selector-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.shape === currentShape));
+    retuneModalBank();
+  }
+  if (snap.currentMaterial !== currentMaterial) {
+    const curPal = activePalette();
+    const palCopy = {};
+    for (const k in curPal) palCopy[k] = curPal[k].slice();
+    matMorphFrom = {
+      decayMult: matLerp('decayMult'), noiseFreqMult: matLerp('noiseFreqMult'),
+      noiseAmpMult: matLerp('noiseAmpMult'), waveDamping: matLerp('waveDamping'),
+      palette: palCopy,
+    };
+    currentMaterial = snap.currentMaterial;
+    matMorphT = 0; _paletteCacheKey = '';
+    document.querySelectorAll('#material-buttons .selector-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.material === currentMaterial));
+    retuneModalBank();
+  }
+  if (snap.gongSizeIdx !== gongSizeIdx) {
+    sizeMorphFrom = {
+      inches: sizeLerp('inches'), baseFreq: sizeLerp('baseFreq'),
+      decay: sizeLerp('decay'), scale: sizeLerp('scale'), vol: sizeLerp('vol'),
+    };
+    gongSizeIdx = snap.gongSizeIdx;
+    sizeMorphT = 0;
+    gongSlider.value = gongSizeIdx;
+    updateGongDisplay();
+    retuneModalBank();
+  }
+  if (snap.currentPitchIdx !== currentPitchIdx) {
+    currentPitchIdx = snap.currentPitchIdx;
+    pitchRatio = snap.pitchRatio;
+    updatePitchRack();
+    retuneModalBank();
+  }
+  malletNorm = snap.malletNorm; malletSlider.value = malletNorm; updateMalletDisplay();
+  sustainNorm = snap.sustainNorm; sustainSlider.value = sustainNorm; updateSustainDisplay();
+  spaceNorm = snap.spaceNorm; spaceSlider.value = spaceNorm; updateSpaceDisplay();
+  volumeNorm = snap.volumeNorm; volumeSlider.value = volumeNorm; updateVolumeDisplay();
+  if (masterGain && audioCtx) {
+    const now = audioCtx.currentTime;
+    masterGain.gain.setTargetAtTime(currentMasterGain(), now, 0.05);
+    reverbSend.gain.setTargetAtTime(spaceNorm, now, 0.05);
+    reverbWet.gain.setTargetAtTime(spaceNorm * 0.7, now, 0.05);
+  }
+  if (snap.chladniMode !== chladniMode) {
+    chladniMode = snap.chladniMode;
+    document.getElementById('chladni-toggle').classList.toggle('active', chladniMode);
+    document.getElementById('sand-gear').classList.toggle('visible', chladniMode);
+    document.getElementById('sand-reset').classList.toggle('visible', chladniMode);
+    if (chladniMode) { chladniEnvelope.fill(0); initSandParticles(); sandFadeIn = 0; sandTransition = 0; }
+  }
+}
+
+function recPolarToScreen(r, theta) {
+  const rect = gongCanvas.getBoundingClientRect();
+  const cx = rect.width / 2, cy = rect.height / 2;
+  const R = Math.min(rect.width, rect.height) * 0.44 * gongVisualScale() * 0.93;
+  return {
+    px: cx + r * R * Math.cos(theta),
+    py: cy + r * R * Math.sin(theta),
+    gx: gridCx + r * gridR * 0.95 * Math.cos(theta),
+    gy: gridCy + r * gridR * 0.95 * Math.sin(theta),
+  };
+}
+
+function recApplyControl(key, value) {
+  switch (key) {
+    case 'shape':
+      if (value !== currentShape) {
+        shapeFrom = currentShape; currentShape = value;
+        shapeMorphT = 0; _morphedT = -1;
+        document.querySelectorAll('#shape-buttons .selector-btn').forEach(b =>
+          b.classList.toggle('active', b.dataset.shape === currentShape));
+        retuneModalBank();
+      }
+      break;
+    case 'material':
+      if (value !== currentMaterial) {
+        const curPal = activePalette();
+        const palCopy = {};
+        for (const k in curPal) palCopy[k] = curPal[k].slice();
+        matMorphFrom = {
+          decayMult: matLerp('decayMult'), noiseFreqMult: matLerp('noiseFreqMult'),
+          noiseAmpMult: matLerp('noiseAmpMult'), waveDamping: matLerp('waveDamping'),
+          palette: palCopy,
+        };
+        currentMaterial = value; matMorphT = 0; _paletteCacheKey = '';
+        document.querySelectorAll('#material-buttons .selector-btn').forEach(b =>
+          b.classList.toggle('active', b.dataset.material === currentMaterial));
+        retuneModalBank();
+      }
+      break;
+    case 'gongSize': {
+      const newIdx = value;
+      if (newIdx !== gongSizeIdx) {
+        sizeMorphFrom = {
+          inches: sizeLerp('inches'), baseFreq: sizeLerp('baseFreq'),
+          decay: sizeLerp('decay'), scale: sizeLerp('scale'), vol: sizeLerp('vol'),
+        };
+        gongSizeIdx = newIdx; sizeMorphT = 0;
+        gongSlider.value = gongSizeIdx;
+        updateGongDisplay(); retuneModalBank();
+        if (masterGain && audioCtx) masterGain.gain.setTargetAtTime(currentMasterGain(), audioCtx.currentTime, 0.05);
+      }
+      break;
+    }
+    case 'pitch': {
+      const newIdx = value;
+      if (newIdx !== currentPitchIdx) {
+        currentPitchIdx = newIdx;
+        pitchRatio = PITCH_RATIOS[currentPitchIdx];
+        updatePitchRack();
+        if (modalBank && audioCtx) {
+          const now = audioCtx.currentTime;
+          modalBank.resonators.forEach(r => {
+            r.energy = 0;
+            r.modGain.gain.cancelScheduledValues(now);
+            r.modGain.gain.setValueAtTime(0, now);
+          });
+          const fundamental = gongFundamental();
+          const P = partials();
+          modalBank.resonators.forEach((r, i) => {
+            if (i >= P.length) return;
+            const freq = Math.min(18000, fundamental * P[i].r);
+            const detune = 0.004 + ((i * 13) % 7) * 0.0006;
+            r.osc1.frequency.setValueAtTime(freq * (1 + detune), now);
+            r.osc2.frequency.setValueAtTime(freq * (1 - detune * 0.7), now);
+            r.freq = freq;
+          });
+        }
+        strike(0.35 + Math.random() * 0.25, Math.random() * Math.PI * 2, 1.0);
+      }
+      break;
+    }
+    case 'mallet':
+      malletNorm = value; malletSlider.value = malletNorm; updateMalletDisplay();
+      break;
+    case 'sustain':
+      sustainNorm = value; sustainSlider.value = sustainNorm; updateSustainDisplay();
+      break;
+  }
+}
+
+function recDispatchEvent(evt) {
+  switch (evt.type) {
+    case 'strike': {
+      const p = recPolarToScreen(evt.r, evt.theta);
+      strike(evt.r, evt.theta, evt.force);
+      const strength = (0.85 + (1 - evt.r) * 0.25) * malletEnergy() * evt.force;
+      injectStrike(p.gx, p.gy, strength);
+      recentStrikes.push({ x: p.px, y: p.py, t: performance.now() });
+      if (recentStrikes.length > 6) recentStrikes.shift();
+      if (chladniMode) scatterSandAtPoint(p.gx, p.gy, strength);
+      break;
+    }
+    case 'rubStart': {
+      const p = recPolarToScreen(evt.r, evt.theta);
+      rubActive = true; recPlayRubActive = true;
+      interactionMode = 'rub';
+      rubState.x = rubState.prevX = p.px;
+      rubState.y = rubState.prevY = p.py;
+      rubState.gx = p.gx; rubState.gy = p.gy;
+      rubState.strikeR = evt.r;
+      rubState.velocity = 0; rubState.vx = rubState.vy = 0;
+      rubState.pressure = 0;
+      rubState.lastMoveT = performance.now();
+      rubState.outside = false;
+      break;
+    }
+    case 'rubMove': {
+      if (!recPlayRubActive) break;
+      const p = recPolarToScreen(evt.r, evt.theta);
+      rubState.prevX = rubState.x; rubState.prevY = rubState.y;
+      rubState.x = p.px; rubState.y = p.py;
+      rubState.gx = p.gx; rubState.gy = p.gy;
+      rubState.strikeR = evt.r;
+      rubState.pressure = evt.pressure;
+      rubState.contactForce = evt.contactForce;
+      const now = performance.now();
+      const dt = Math.max(0.001, (now - rubState.lastMoveT) / 1000);
+      const dx = rubState.x - rubState.prevX;
+      const dy = rubState.y - rubState.prevY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      rubState.velocity = Math.min(2, dist / dt / 400);
+      rubState.vx = dx / dt / 400;
+      rubState.vy = dy / dt / 400;
+      rubState.lastMoveT = now;
+      rubState.outside = false;
+      break;
+    }
+    case 'rubEnd':
+      rubActive = false; recPlayRubActive = false;
+      rubState.velocity = 0;
+      interactionMode = 'strike';
+      break;
+    case 'control':
+      recApplyControl(evt.key, evt.value);
+      break;
+    case 'dampenStart':
+      dampenActive = true;
+      dampenStart = performance.now();
+      dampenBtn.classList.add('pressing');
+      break;
+    case 'dampenEnd':
+      dampenActive = false;
+      dampenBtn.classList.remove('pressing');
+      break;
+  }
+}
+
+function recPlaybackTick() {
+  const elapsed = performance.now() - recPlayStartT;
+  while (recPlayIdx < recEvents.length && recEvents[recPlayIdx].t <= elapsed) {
+    recDispatchEvent(recEvents[recPlayIdx]);
+    recPlayIdx++;
+  }
+  if (recPlayIdx >= recEvents.length) {
+    if (recLoopEnabled) {
+      if (recPlayRubActive) { rubActive = false; recPlayRubActive = false; rubState.velocity = 0; interactionMode = 'strike'; }
+      if (dampenActive) { dampenActive = false; dampenBtn.classList.remove('pressing'); }
+      recSilenceGong();
+      recRestoreSnapshot(recSnapshot);
+      recPlayIdx = 0;
+      recPlayStartT = performance.now();
+    } else {
+      recStopPlayback();
+    }
+  }
+}
+
+function recStartPlayback() {
+  if (recEvents.length === 0) return;
+  if (recState === 'recording') recPauseRecording();
+  unlockAudio();
+  recSilenceGong();
+  recRestoreSnapshot(recSnapshot);
+  recPlayIdx = 0;
+  recPlayStartT = performance.now();
+  recState = 'playing';
+  recUpdateUI();
+}
+
+function recStopPlayback() {
+  if (recState !== 'playing') return;
+  recCleanupPlayback();
+  recState = recEvents.length > 0 ? 'paused' : 'idle';
+  recUpdateUI();
+}
+
+function recUpdateUI() {
+  const recordBtn = document.getElementById('rec-record');
+  const playBtn = document.getElementById('rec-play');
+  const loopBtn = document.getElementById('rec-loop');
+  const clearBtn = document.getElementById('rec-clear');
+  const hasRec = recEvents.length > 0;
+
+  recordBtn.classList.remove('recording', 'paused');
+  if (recState === 'recording') recordBtn.classList.add('recording');
+  else if (recState === 'paused') recordBtn.classList.add('paused');
+  recordBtn.disabled = false;
+
+  playBtn.disabled = !hasRec && recState !== 'playing';
+  playBtn.innerHTML = recState === 'playing' ? '&#9632;' : '&#9654;';
+  playBtn.classList.toggle('active', recState === 'playing');
+
+  loopBtn.classList.toggle('active', recLoopEnabled);
+
+  clearBtn.disabled = !hasRec && recState !== 'recording';
+}
+
+// Record: idle→recording, recording→paused, paused→recording (append), playing→stop+recording (append)
+document.getElementById('rec-record').addEventListener('click', () => {
+  switch (recState) {
+    case 'idle':
+      recBeginRecording();
+      break;
+    case 'recording':
+      recPauseRecording();
+      break;
+    case 'paused':
+      recResumeRecording();
+      break;
+    case 'playing':
+      recCleanupPlayback();
+      recResumeRecording();
+      break;
+  }
+});
+// Play: paused→playing, playing→paused, recording→pause+playing
+document.getElementById('rec-play').addEventListener('click', () => {
+  switch (recState) {
+    case 'paused':
+      recStartPlayback();
+      break;
+    case 'playing':
+      recStopPlayback();
+      break;
+    case 'recording':
+      recStartPlayback();
+      break;
+  }
+});
+document.getElementById('rec-loop').addEventListener('click', () => {
+  recLoopEnabled = !recLoopEnabled;
+  recUpdateUI();
+});
+document.getElementById('rec-clear').addEventListener('click', () => {
+  if (recState === 'recording') recPauseRecording();
+  if (recState === 'playing') { recCleanupPlayback(); }
+  recEvents = [];
+  recSnapshot = null;
+  recElapsed = 0;
+  recState = 'idle';
+  recUpdateUI();
+});
+recUpdateUI();
 </script>
 
 <div class="sand-debug" id="sand-debug">
