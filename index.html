@@ -2123,9 +2123,18 @@ function updateModalBank(velocity, contactR, dt) {
 
   const theta = Math.atan2(rubState.gy - gridCy, rubState.gx - gridCx);
 
-  const flumieSpeedPeak = flumieMode ? Math.min(13, velocity * 10) : 0;
+  const flumieTypeOffset = flumieMode ? (1 - malletNorm) * 4 : 0;
+  const flumieSpeedPeak = flumieMode ? Math.min(13, velocity * 12 + flumieTypeOffset) : 0;
   const flumieSigma = 2.0 + malletNorm * 1.5;
   const flumieGrip = flumieMode ? (0.4 + malletNorm * 0.6) : 0;
+
+  if (flumieMode) {
+    flumieSmoothedV = flumieSmoothedV * 0.93 + velocity * 0.07;
+  } else {
+    flumieSmoothedV *= 0.9;
+  }
+  const flumieSmoothness = flumieMode
+    ? 0.7 + 0.3 / (1 + Math.abs(velocity - flumieSmoothedV) * 4) : 1;
 
   modalBank.resonators.forEach((r, i) => {
     if (i >= P.length) return;
@@ -2142,7 +2151,8 @@ function updateModalBank(velocity, contactR, dt) {
       const angular = Math.cos(angM * theta + i * 0.37);
       shape = radial * angular;
     }
-    const coupling = Math.max(0.06, Math.abs(shape));
+    const couplingFloor = flumieMode ? 0.005 : 0.06;
+    const coupling = Math.max(couplingFloor, Math.abs(shape));
 
     const dirFactor = symmetric
       ? 0.55 + 0.45 * radialComp
@@ -2156,19 +2166,23 @@ function updateModalBank(velocity, contactR, dt) {
 
     let tau = Math.max(0.15, p.decay * decayMult * DECAY_FACTOR_MULT());
 
-    if (flumieMode && velocity > 0.02) {
+    if (flumieMode && (velocity > 0.01 || rubState.pressure > 0.05)) {
       const dist = (i - flumieSpeedPeak) / flumieSigma;
       const velocityMatch = Math.exp(-0.5 * dist * dist);
-      const saturation = 1 / (1 + r.energy * 0.8);
-      const frictionStrength = velocityMatch * coupling * rubState.pressure
-                             * flumieGrip * saturation * 1.8;
-      const dampReduction = Math.min(0.93, frictionStrength);
-      tau = tau / Math.max(0.07, 1 - dampReduction);
-
-      const seed = p.amp * velocity * coupling * velocityMatch * rubState.pressure
+      const activeV = Math.max(velocity, rubState.pressure * 0.15);
+      const flumieDirFactor = symmetric
+        ? 0.6 + 0.4 * radialComp
+        : 0.6 + 0.4 * tangComp;
+      const frictionGain = velocityMatch * coupling * flumieDirFactor * rubState.pressure
+                         * flumieGrip * flumieSmoothness * 2.5
+                         * activeV / Math.max(0.1, activeV);
+      const saturatedGain = frictionGain / (1 + r.energy * r.energy * 0.45);
+      const naturalDecay = 1 / tau;
+      const netRate = saturatedGain - naturalDecay;
+      const growth = Math.exp(netRate * dt);
+      const seed = p.amp * activeV * coupling * velocityMatch * rubState.pressure
                  * flumieGrip * 0.15 * dt;
-      const decayFactor = Math.exp(-dt / tau);
-      r.energy = r.energy * decayFactor + seed;
+      r.energy = r.energy * growth + seed;
     } else {
       const decayFactor = Math.exp(-dt / tau);
       const drive = p.amp * velocity * coupling * dirFactor * mWeight
@@ -2179,15 +2193,30 @@ function updateModalBank(velocity, contactR, dt) {
     if (r.energy < 1e-6)       r.energy = 0;
 
     const amp = r.energy * AMP_SCALE;
+    const gainTau = flumieMode ? 0.01 : 0.03;
     r.modGain.gain.cancelScheduledValues(now);
-    r.modGain.gain.setTargetAtTime(amp, now, 0.03);
+    r.modGain.gain.setTargetAtTime(amp, now, gainTau);
 
-    const wobbleScale = flumieMode ? 0.0008 : 0.0028;
+    const wobbleScale = flumieMode ? 0.0018 : 0.0028;
     const wobble = r.freq * wobbleScale * Math.sqrt(r.energy);
     r.fmDepth1.gain.cancelScheduledValues(now);
     r.fmDepth1.gain.setTargetAtTime(wobble, now, 0.08);
     r.fmDepth2.gain.cancelScheduledValues(now);
     r.fmDepth2.gain.setTargetAtTime(wobble * 0.7, now, 0.08);
+
+    if (flumieMode && r.energy > 0.1) {
+      const physicsWobble = r.energy * 0.0003 * Math.sin(now * 3.7 + i * 2.1);
+      const angularMod = Math.sin(theta * (1 + i * 0.37)) * 0.0004 * r.energy;
+      const tremorMod = (velocity - flumieSmoothedV) * 0.0015 * r.energy;
+      const pitchWobble = physicsWobble + angularMod + tremorMod;
+      const detune = 0.004 + ((i * 13) % 7) * 0.0006;
+      const f1 = r.freq * (1 + detune + pitchWobble);
+      const f2 = r.freq * (1 - detune * 0.7 + pitchWobble * 0.6);
+      r.osc1.frequency.cancelScheduledValues(now);
+      r.osc1.frequency.setTargetAtTime(f1, now, 0.05);
+      r.osc2.frequency.cancelScheduledValues(now);
+      r.osc2.frequency.setTargetAtTime(f2, now, 0.05);
+    }
   });
 
   if (flumieMode) return;
@@ -4216,6 +4245,7 @@ function dismissStart() {
 startOverlay.addEventListener('touchend', (e) => { e.preventDefault(); dismissStart(); });
 startOverlay.addEventListener('click', dismissStart);
 let rubActive = false;
+let flumieSmoothedV = 0;
 const rubState = {
   x: 0, y: 0, prevX: 0, prevY: 0,
   gx: 0, gy: 0,
