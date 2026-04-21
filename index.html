@@ -690,10 +690,13 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
     z-index: 10;
+    touch-action: manipulation;
   }
   .mallet-pick {
+    width: 34px;
+    height: 34px;
     border: none;
     background: rgba(255,255,255,0.08);
     border-radius: 50%;
@@ -705,27 +708,60 @@
     align-items: center;
     justify-content: center;
   }
-  .mallet-pick::after {
-    content: '';
-    border-radius: 50%;
-    background: var(--text-dim);
-    transition: background 0.2s ease;
-  }
   .mallet-pick:hover { background: rgba(255,255,255,0.15); }
   .mallet-pick.active {
     background: rgba(var(--bronze-rgb, 180,140,80), 0.25);
     box-shadow: 0 0 10px var(--btn-glow);
   }
-  .mallet-pick.active::after { background: var(--gold); }
   .mallet-pick:focus { outline: none; }
-  .mallet-rack { touch-action: manipulation; }
-
-  .mallet-pick { width: 38px; height: 38px; }
-  .mallet-pick[data-size="0"]::after { width: 7px; height: 7px; }
-  .mallet-pick[data-size="1"]::after { width: 11px; height: 11px; }
-  .mallet-pick[data-size="2"]::after { width: 14px; height: 14px; }
-  .mallet-pick[data-size="3"]::after { width: 18px; height: 18px; }
-  .mallet-pick[data-size="4"]::after { width: 22px; height: 22px; }
+  .mp-label {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    pointer-events: none;
+  }
+  .mallet-pick.active .mp-label { color: var(--gold); }
+  .mallet-info-btn {
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--bg-panel-border);
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+    cursor: pointer;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 11px;
+    color: var(--text-faint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+    transition: all 0.2s ease;
+  }
+  .mallet-info-btn:hover { color: var(--gold); border-color: var(--gold); }
+  .mallet-info-btn:focus { outline: none; }
+  .mallet-info-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 280px;
+    padding: 20px 24px;
+    background: var(--bg-panel);
+    border: 1px solid var(--bg-panel-border);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 15px;
+    line-height: 1.5;
+    z-index: 1000;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .mallet-info-popup b { color: var(--gold); }
+  .mallet-info-popup em { color: var(--bronze-light); font-style: italic; }
 
   .instrument-selectors {
     width: 100%;
@@ -1424,11 +1460,17 @@
           <button class="rec-btn" id="rec-clear" title="Clear" aria-label="Clear recording" disabled>&#10005;</button>
         </div>
         <div class="mallet-rack" id="mallet-rack">
-          <button class="mallet-pick" data-size="0" data-mallet="0" title="Wooden Stick"></button>
-          <button class="mallet-pick" data-size="1" data-mallet="1" title="Light felt"></button>
-          <button class="mallet-pick active" data-size="2" data-mallet="2" title="Medium Felt"></button>
-          <button class="mallet-pick" data-size="3" data-mallet="3" title="Heavy felt"></button>
-          <button class="mallet-pick" data-size="4" data-mallet="4" title="Soft Beater"></button>
+          <div class="tuning-toggle" id="mallet-toggle">
+            <div class="tuning-toggle-slider" id="mallet-toggle-slider"></div>
+            <button class="tuning-toggle-option active" data-mmode="mallet">Mallet</button>
+            <button class="tuning-toggle-option" data-mmode="flumie">Flumie</button>
+          </div>
+          <button class="mallet-pick" data-size="0" data-mallet="0" title="Wooden Stick"><span class="mp-label">Wood</span></button>
+          <button class="mallet-pick" data-size="1" data-mallet="1" title="Light Felt"><span class="mp-label">Light</span></button>
+          <button class="mallet-pick active" data-size="2" data-mallet="2" title="Medium Felt"><span class="mp-label">Med</span></button>
+          <button class="mallet-pick" data-size="3" data-mallet="3" title="Heavy Felt"><span class="mp-label">Heavy</span></button>
+          <button class="mallet-pick" data-size="4" data-mallet="4" title="Soft Beater"><span class="mp-label">Soft</span></button>
+          <button class="mallet-info-btn" id="mallet-info-btn" title="About mallets &amp; flumies">?</button>
         </div>
       </div>
 
@@ -1464,18 +1506,6 @@
             <input type="range" id="gong-slider" min="0" max="3" step="1" value="2">
             <div class="step-dots"><span></span><span></span><span></span><span></span></div>
           </div>
-        </div>
-        <div class="control">
-          <div class="control-label">
-            <span class="control-name" id="mallet-control-name">Mallet</span>
-            <span class="control-value" id="mallet-value">Medium Felt</span>
-          </div>
-          <div class="tuning-toggle" id="mallet-toggle" style="margin-bottom:4px">
-            <div class="tuning-toggle-slider" id="mallet-toggle-slider"></div>
-            <button class="tuning-toggle-option active" data-mmode="mallet">Mallet</button>
-            <button class="tuning-toggle-option" data-mmode="flumie">Flumie</button>
-          </div>
-          <input type="range" id="mallet-slider" min="0" max="1" step="0.001" value="0.5">
         </div>
         <div class="control">
           <div class="control-label">
@@ -3754,31 +3784,27 @@ function drawRadial() {
 // SLIDERS & SELECTORS
 // ============================================================
 const gongSlider = document.getElementById('gong-slider');
-const malletSlider = document.getElementById('mallet-slider');
 const gongValue = document.getElementById('gong-value');
-const malletValue = document.getElementById('mallet-value');
 
 const MALLET_LABELS = ['Wooden Stick', 'Light Felt', 'Medium Felt', 'Heavy Felt', 'Soft Beater'];
 const FLUMIE_LABELS = ['Small Rubber', 'Medium Rubber', 'Large Rubber', 'Suede Pad', 'Sheepskin'];
-function malletLabel(v) {
-  const labels = flumieMode ? FLUMIE_LABELS : MALLET_LABELS;
-  const idx = Math.min(labels.length - 1, Math.floor(v * labels.length));
-  return labels[idx];
-}
 function updateGongDisplay() {
   const s = gongSize_();
   const inches = Math.round(s.inches);
   gongValue.innerHTML = `${s.label}<span class="unit">${inches}in</span>`;
 }
+const MALLET_SHORT = ['Wood', 'Light', 'Med', 'Heavy', 'Soft'];
+const FLUMIE_SHORT = ['Sm', 'Med', 'Lg', 'Suede', 'Skin'];
 function updateMalletDisplay() {
-  malletValue.textContent = malletLabel(malletNorm);
   const idx = Math.min(4, Math.floor(malletNorm * 5));
   const labels = flumieMode ? FLUMIE_LABELS : MALLET_LABELS;
+  const short = flumieMode ? FLUMIE_SHORT : MALLET_SHORT;
   document.querySelectorAll('.mallet-pick').forEach((btn, i) => {
     btn.classList.toggle('active', i === idx);
     btn.title = labels[i];
+    const lbl = btn.querySelector('.mp-label');
+    if (lbl) lbl.textContent = short[i];
   });
-  document.getElementById('mallet-control-name').textContent = flumieMode ? 'Flumie' : 'Mallet';
 }
 function updateMalletToggle() {
   const toggle = document.getElementById('mallet-toggle');
@@ -3818,19 +3844,12 @@ gongSlider.addEventListener('input', (e) => {
     masterGain.gain.setTargetAtTime(currentMasterGain(), audioCtx.currentTime, 0.05);
   }
 });
-malletSlider.addEventListener('input', (e) => {
-  malletNorm = parseFloat(e.target.value);
-  updateMalletDisplay();
-  recPushEvent({ type: 'control', key: 'mallet', value: malletNorm });
-});
-
 const MALLET_NORMS = [0.08, 0.28, 0.5, 0.72, 0.92];
 document.getElementById('mallet-rack').addEventListener('click', (e) => {
   const btn = e.target.closest('.mallet-pick');
   if (!btn) return;
   const idx = parseInt(btn.dataset.mallet);
   malletNorm = MALLET_NORMS[idx];
-  malletSlider.value = malletNorm;
   updateMalletDisplay();
   recPushEvent({ type: 'control', key: 'mallet', value: malletNorm });
 });
@@ -3842,7 +3861,22 @@ document.getElementById('mallet-toggle').addEventListener('click', (e) => {
   if (wantFlumie === flumieMode) return;
   setFlumieMode(wantFlumie);
 });
-requestAnimationFrame(() => updateMalletToggle());
+requestAnimationFrame(() => { updateMalletToggle(); updateMalletDisplay(); });
+
+document.getElementById('mallet-info-btn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const existing = document.getElementById('mallet-info-popup');
+  if (existing) { existing.remove(); return; }
+  const popup = document.createElement('div');
+  popup.id = 'mallet-info-popup';
+  popup.className = 'mallet-info-popup';
+  popup.innerHTML = flumieMode
+    ? '<b>Flumies</b> are friction mallets — rubber or suede pads rubbed slowly against the gong.<br><br><em>Drag</em> with smooth, circular motions. The gong will begin to sing. Speed and direction shape the voice.<br><br>Striking is possible but muted — flumies absorb impact. Their magic is in the rub.'
+    : '<b>Mallets</b> strike the gong to set it ringing.<br><br><em>Tap</em> for a clean strike. Harder mallets bite; softer ones bloom.<br><br>Hold and drag to <em>rub</em> — a different texture, coaxing overtones out by friction.';
+  document.body.appendChild(popup);
+  const dismiss = () => { popup.remove(); document.removeEventListener('pointerdown', dismiss); };
+  setTimeout(() => document.addEventListener('pointerdown', dismiss), 50);
+});
 
 const sustainSlider = document.getElementById('sustain-slider');
 const sustainValue = document.getElementById('sustain-value');
@@ -4834,7 +4868,7 @@ function recRestoreSnapshot(snap) {
     retuneModalBank();
   }
   if (snap.flumieMode !== undefined && snap.flumieMode !== flumieMode) setFlumieMode(snap.flumieMode);
-  malletNorm = snap.malletNorm; malletSlider.value = malletNorm; updateMalletDisplay();
+  malletNorm = snap.malletNorm; updateMalletDisplay();
   sustainNorm = snap.sustainNorm; sustainSlider.value = sustainNorm; updateSustainDisplay();
   spaceNorm = snap.spaceNorm; spaceSlider.value = spaceNorm; updateSpaceDisplay();
   volumeNorm = snap.volumeNorm; volumeSlider.value = volumeNorm; updateVolumeDisplay();
@@ -4944,7 +4978,7 @@ function recApplyControl(key, value) {
       break;
     }
     case 'mallet':
-      malletNorm = value; malletSlider.value = malletNorm; updateMalletDisplay();
+      malletNorm = value; updateMalletDisplay();
       break;
     case 'flumieMode':
       if (value !== flumieMode) setFlumieMode(value);
