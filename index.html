@@ -445,9 +445,7 @@
     gap: 5px;
     margin-top: -4px;
     margin-bottom: 4px;
-    visibility: hidden;
   }
-  body[data-healing="true"] .bliss-dots { visibility: visible; }
   .bliss-dot {
     width: 5px;
     height: 5px;
@@ -467,7 +465,7 @@
     0%, 100% { box-shadow: 0 0 0 rgba(200, 170, 100, 0); }
     50% { box-shadow: 0 0 12px rgba(200, 170, 100, 0.25); }
   }
-  body[data-healing="true"] #gong-slider-control { opacity: 0.25; pointer-events: none; }
+  #gong-slider-control, #space-slider-control { display: none; }
 
   /* ==========================================================
      RECORDING TRANSPORT
@@ -513,6 +511,7 @@
   .rec-btn:hover:not(:disabled) { background: rgba(255,255,255,0.12); color: var(--text); }
   .rec-btn:focus { outline: none; }
   .rec-btn:disabled { opacity: 0.25; cursor: default; }
+  #rec-clear { font-size: 22px; }
   .rec-btn.active {
     color: var(--gold);
     border-color: var(--btn-glow);
@@ -1637,7 +1636,7 @@
             <div class="rec-divider"></div>
             <button class="rec-btn" id="rec-record" title="Record" aria-label="Record"></button>
             <button class="rec-btn" id="rec-play" title="Play (double-tap to loop)" aria-label="Play" disabled>&#9654;</button>
-            <button class="rec-btn" id="rec-clear" title="Clear" aria-label="Clear recording" disabled>&#10005;</button>
+            <button class="rec-btn" id="rec-clear" title="Clear" aria-label="Clear recording" disabled>↺</button>
           </div>
         </div>
         <div class="mallet-rack" id="mallet-rack">
@@ -1696,7 +1695,7 @@
           </div>
           <input type="range" id="sustain-slider" min="0" max="1" step="0.001" value="0.25">
         </div>
-        <div class="control">
+        <div class="control" id="space-slider-control">
           <div class="control-label">
             <span class="control-name">Space</span>
             <span class="control-value" id="space-value">dry</span>
@@ -1981,6 +1980,10 @@ let healingTarget = null;
 let appliedHealingPage = 0;
 let appliedHealingIdx = 0;
 let appliedPitchIdx = 5;
+const SCALE_OCTAVES = [0.5, 1, 2];
+let currentScalePage = 1;
+let appliedScalePage = 1;
+let pendingModeSwitch = false;
 
 function shape() { return SHAPES[currentShape]; }
 function material() { return MATERIALS[currentMaterial]; }
@@ -2117,7 +2120,7 @@ function sizeLerp(key) {
 }
 function gongDiameterIn()   { return sizeLerp('inches'); }
 function gongVisualScale()  { return sizeLerp('scale'); }
-function gongFundamental()  { return sizeLerp('baseFreq') * shape().pitchMult * pitchRatio; }
+function gongFundamental()  { return sizeLerp('baseFreq') * shape().pitchMult * pitchRatio * (healingMode ? 1 : SCALE_OCTAVES[appliedScalePage]); }
 function matLerp(key) {
   if (matMorphT >= 1 || !matMorphFrom) return material()[key];
   const t = morphEase(matMorphT);
@@ -2670,14 +2673,18 @@ function updateModalBank(velocity, contactR, dt) {
 const STRIKE_DUCK = 0.35;
 
 function applyPendingPreset() {
+  const modeSwitch = pendingModeSwitch;
+  if (modeSwitch) pendingModeSwitch = false;
   if (healingMode) {
-    if (currentHealingPage === appliedHealingPage && currentHealingIdx === appliedHealingIdx) return;
+    if (!modeSwitch && currentHealingPage === appliedHealingPage && currentHealingIdx === appliedHealingIdx) return;
     freezeModalBank();
     applyHealingPreset(currentHealingIdx);
   } else {
-    if (currentPitchIdx === appliedPitchIdx) return;
+    if (!modeSwitch && currentPitchIdx === appliedPitchIdx && currentScalePage === appliedScalePage) return;
     freezeModalBank();
+    healingTarget = null;
     appliedPitchIdx = currentPitchIdx;
+    appliedScalePage = currentScalePage;
     pitchRatio = PITCH_RATIOS[currentPitchIdx];
   }
 }
@@ -4412,7 +4419,7 @@ function savePrefs() {
   try {
     localStorage.setItem('fg_prefs', JSON.stringify({
       healingMode, currentHealingPage, currentHealingIdx,
-      currentPitchIdx, flumieMode, malletNorm,
+      currentPitchIdx, currentScalePage, flumieMode, malletNorm,
     }));
     localStorage.setItem('healingMode', healingMode ? 'true' : 'false');
   } catch(e) {}
@@ -4426,6 +4433,7 @@ function savePrefs() {
     if (p.currentHealingPage !== undefined) currentHealingPage = Math.min(p.currentHealingPage, HEALING_PAGES.length - 1);
     if (p.currentHealingIdx !== undefined) currentHealingIdx = Math.min(p.currentHealingIdx, 5);
     if (p.currentPitchIdx !== undefined) { currentPitchIdx = p.currentPitchIdx; pitchRatio = PITCH_RATIOS[currentPitchIdx]; appliedPitchIdx = currentPitchIdx; }
+    if (p.currentScalePage !== undefined) { currentScalePage = p.currentScalePage; appliedScalePage = currentScalePage; }
     if (p.flumieMode !== undefined) flumieMode = p.flumieMode;
     if (p.malletNorm !== undefined) malletNorm = p.malletNorm;
     appliedHealingPage = currentHealingPage;
@@ -4551,56 +4559,29 @@ function updateBlissHints() {
 }
 
 function updateBlissDots() {
+  const page = healingMode ? currentHealingPage : currentScalePage;
   document.querySelectorAll('.bliss-dot').forEach((dot, i) => {
-    dot.classList.toggle('active', i === currentHealingPage);
+    dot.classList.toggle('active', i === page);
   });
 }
 
 function setHealingMode(enabled) {
   const wasExcited = modalBank && modalBank.resonators.some(r => r.energy > 1e-4);
-  if (wasExcited && enabled) {
+  if (wasExcited) {
     freezeModalBank();
   } else if (modalBank) {
-    modalBank.resonators.forEach(r => { r.energy = 0; });
-  }
-  if (!enabled) {
-    frozenBanks.forEach(f => teardownBank(f.bank));
-    frozenBanks.length = 0;
+    teardownBank(modalBank);
+    modalBank = null;
   }
   healingMode = enabled;
+  pendingModeSwitch = true;
   if (enabled) { currentHealingPage = 0; currentHealingIdx = 0; }
   document.body.setAttribute('data-healing', enabled ? 'true' : 'false');
   updateTuningToggle();
   updatePitchRackLabels();
   updateBlissDots();
   updateBlissHints();
-  const applyRetune = () => {
-    if (enabled) {
-      applyHealingPreset(currentHealingIdx);
-    } else {
-      healingTarget = null;
-      pitchRatio = PITCH_RATIOS[currentPitchIdx];
-      sizeMorphFrom = {
-        inches: sizeLerp('inches'),
-        baseFreq: sizeLerp('baseFreq'),
-        decay: sizeLerp('decay'),
-        scale: sizeLerp('scale'),
-        vol: sizeLerp('vol'),
-      };
-      SIZE_MORPH_DURATION = 1.5;
-      sizeMorphT = 0;
-      updateGongDisplay();
-      retuneModalBank();
-      if (masterGain && audioCtx) {
-        masterGain.gain.setTargetAtTime(currentMasterGain(), audioCtx.currentTime, 0.05);
-      }
-    }
-  };
-  if (wasExcited && !enabled) {
-    setTimeout(applyRetune, 80);
-  } else {
-    applyRetune();
-  }
+  updateGongDisplay();
   savePrefs();
 }
 
@@ -4647,6 +4628,13 @@ document.getElementById('tuning-toggle').addEventListener('click', (e) => {
     savePrefs();
     return;
   }
+  if (!wantHealing && !healingMode) {
+    currentScalePage = (currentScalePage + 1) % SCALE_OCTAVES.length;
+    updateBlissDots();
+    recPushEvent({ type: 'control', key: 'scalePage', value: currentScalePage });
+    savePrefs();
+    return;
+  }
   if (wantHealing === healingMode) return;
   setHealingMode(wantHealing);
   recPushEvent({ type: 'control', key: 'healingMode', value: wantHealing });
@@ -4660,7 +4648,18 @@ requestAnimationFrame(() => {
   updateMalletDisplay();
   updateMalletToggle();
   updateBlissHints();
-  if (healingMode) applyHealingPreset(currentHealingIdx);
+  if (healingMode) {
+    const preset = healingPresets()[currentHealingIdx];
+    const freqVol = Math.min(1.0, 220 / Math.max(100, preset.freq));
+    healingTarget = {
+      baseFreq: preset.freq / shape().pitchMult,
+      inches: 34, decay: 1.4, scale: 0.88, vol: Math.max(0.3, freqVol),
+      label: preset.freq + 'Hz',
+    };
+    appliedHealingPage = currentHealingPage;
+    appliedHealingIdx = currentHealingIdx;
+    updateGongDisplay();
+  }
 });
 
 // Dampen — hold to gradually silence
@@ -4851,6 +4850,7 @@ function beginRub(e, p) {
   if (!p.inside) return;
   unlockAudio();
   applyPendingPreset();
+  buildModalBank();
   interactionMode = 'rub';
   rubActive = true;
   rubState.x = rubState.prevX = p.px;
@@ -5289,7 +5289,7 @@ function recCaptureSnapshot() {
   return {
     currentShape, currentMaterial, gongSizeIdx, currentPitchIdx,
     pitchRatio, malletNorm, sustainNorm, spaceNorm, volumeNorm, chladniMode,
-    healingMode, currentHealingIdx, currentHealingPage, flumieMode,
+    healingMode, currentHealingIdx, currentHealingPage, currentScalePage, flumieMode,
   };
 }
 
@@ -5397,6 +5397,7 @@ function recRestoreSnapshot(snap) {
     if (chladniMode) { chladniEnvelope.fill(0); initSandParticles(); sandFadeIn = 0; sandTransition = 0; }
   }
   if (snap.currentHealingPage !== undefined) currentHealingPage = snap.currentHealingPage;
+  if (snap.currentScalePage !== undefined) { currentScalePage = snap.currentScalePage; appliedScalePage = snap.currentScalePage; }
   if (snap.healingMode !== undefined && snap.healingMode !== healingMode) {
     currentHealingIdx = snap.currentHealingIdx !== undefined ? snap.currentHealingIdx : 0;
     setHealingMode(snap.healingMode);
@@ -5488,6 +5489,10 @@ function recApplyControl(key, value) {
       currentHealingPage = value;
       updateBlissDots();
       updatePitchRackLabels();
+      break;
+    case 'scalePage':
+      currentScalePage = value;
+      updateBlissDots();
       break;
     case 'healingPreset': {
       const newIdx = value;
