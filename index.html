@@ -1729,10 +1729,12 @@ const SHAPES = {
   chau: {
     label: 'Chau',
     pitchMult: 0.97,
+    bendSign: 1,
+    cascadeMult: 1.0,
     partials: [
       { r: 1.00, amp: 1.00, decay: 9.0 },
-      { r: 1.58, amp: 0.85, decay: 8.0 },
-      { r: 2.14, amp: 0.70, decay: 7.0 },
+      { r: 1.58, amp: 1.05, decay: 8.0 },
+      { r: 2.14, amp: 0.80, decay: 7.0 },
       { r: 2.92, amp: 0.62, decay: 6.2 },
       { r: 3.50, amp: 0.55, decay: 5.6 },
       { r: 4.21, amp: 0.48, decay: 5.0 },
@@ -1749,12 +1751,14 @@ const SHAPES = {
   bao: {
     label: 'Bao',
     pitchMult: 0.90,
+    bendSign: -1,
+    cascadeMult: 1.2,
     partials: [
       { r: 1.00, amp: 1.30, decay: 10.0 },
       { r: 1.98, amp: 0.60, decay: 8.0 },
       { r: 2.45, amp: 0.45, decay: 6.5 },
       { r: 3.00, amp: 0.58, decay: 7.0 },
-      { r: 3.96, amp: 0.40, decay: 5.5 },
+      { r: 3.96, amp: 0.52, decay: 6.5 },
       { r: 4.52, amp: 0.30, decay: 4.8 },
       { r: 5.03, amp: 0.38, decay: 5.0 },
       { r: 6.00, amp: 0.30, decay: 4.2 },
@@ -1769,6 +1773,8 @@ const SHAPES = {
   bell: {
     label: 'Bell',
     pitchMult: 1.77,
+    bendSign: -1,
+    cascadeMult: 1.3,
     partials: [
       { r: 0.50, amp: 0.45, decay: 14.0 },
       { r: 1.00, amp: 1.20, decay: 11.0 },
@@ -1789,41 +1795,45 @@ const SHAPES = {
   wind: {
     label: 'Wind',
     pitchMult: 0.79,
+    bendSign: 1,
+    cascadeMult: 0.5,
     partials: [
       { r: 1.00, amp: 1.05, decay: 4.5 },
-      { r: 1.82, amp: 0.72, decay: 4.2 },
-      { r: 2.68, amp: 0.68, decay: 3.8 },
-      { r: 3.58, amp: 0.62, decay: 3.3 },
-      { r: 4.60, amp: 0.70, decay: 2.9 },
-      { r: 5.80, amp: 0.62, decay: 2.5 },
-      { r: 7.20, amp: 0.55, decay: 2.2 },
-      { r: 8.75, amp: 0.48, decay: 1.9 },
-      { r: 10.5, amp: 0.38, decay: 1.6 },
-      { r: 12.5, amp: 0.30, decay: 1.3 },
-      { r: 14.8, amp: 0.22, decay: 1.0 },
-      { r: 17.5, amp: 0.15, decay: 0.8 },
-      { r: 20.5, amp: 0.10, decay: 0.6 },
-      { r: 24.0, amp: 0.06, decay: 0.4 },
+      { r: 1.82, amp: 0.78, decay: 4.2 },
+      { r: 2.68, amp: 0.75, decay: 3.8 },
+      { r: 3.58, amp: 0.72, decay: 3.3 },
+      { r: 4.60, amp: 0.75, decay: 2.9 },
+      { r: 5.80, amp: 0.70, decay: 2.5 },
+      { r: 7.20, amp: 0.65, decay: 2.2 },
+      { r: 8.75, amp: 0.58, decay: 1.9 },
+      { r: 10.5, amp: 0.48, decay: 1.6 },
+      { r: 12.5, amp: 0.38, decay: 1.3 },
+      { r: 14.8, amp: 0.28, decay: 1.0 },
+      { r: 17.5, amp: 0.18, decay: 0.8 },
+      { r: 20.5, amp: 0.12, decay: 0.6 },
+      { r: 24.0, amp: 0.07, decay: 0.4 },
     ],
   },
   bowl: {
     label: 'Bowl',
     pitchMult: 0.77,
+    bendSign: -1,
+    cascadeMult: 0.7,
     partials: [
-      { r: 1.00, amp: 1.20, decay: 16.0 },
-      { r: 2.00, amp: 0.85, decay: 14.0 },
-      { r: 3.00, amp: 0.65, decay: 12.0 },
-      { r: 4.00, amp: 0.50, decay: 10.0 },
-      { r: 5.00, amp: 0.38, decay: 8.5 },
-      { r: 6.00, amp: 0.28, decay: 7.0 },
-      { r: 7.00, amp: 0.20, decay: 5.8 },
-      { r: 8.00, amp: 0.14, decay: 4.8 },
-      { r: 9.00, amp: 0.10, decay: 3.8 },
-      { r: 10.0, amp: 0.07, decay: 3.0 },
-      { r: 11.0, amp: 0.05, decay: 2.4 },
-      { r: 12.0, amp: 0.03, decay: 1.8 },
-      { r: 13.0, amp: 0.02, decay: 1.3 },
-      { r: 14.0, amp: 0.01, decay: 0.9 },
+      { r: 1.00,  amp: 1.20,  decay: 45.0 },
+      { r: 2.71,  amp: 0.90,  decay: 38.0 },
+      { r: 5.41,  amp: 0.55,  decay: 28.0 },
+      { r: 8.86,  amp: 0.32,  decay: 20.0 },
+      { r: 13.34, amp: 0.18,  decay: 14.0 },
+      { r: 18.80, amp: 0.10,  decay: 9.5 },
+      { r: 25.40, amp: 0.06,  decay: 6.5 },
+      { r: 33.0,  amp: 0.03,  decay: 4.5 },
+      { r: 41.8,  amp: 0.018, decay: 3.2 },
+      { r: 51.6,  amp: 0.010, decay: 2.2 },
+      { r: 62.5,  amp: 0.006, decay: 1.6 },
+      { r: 74.5,  amp: 0.003, decay: 1.1 },
+      { r: 87.6,  amp: 0.002, decay: 0.8 },
+      { r: 102.0, amp: 0.001, decay: 0.5 },
     ],
   },
 };
@@ -1832,6 +1842,9 @@ const MATERIALS = {
   bronze: {
     label: 'Bronze',
     decayMult: 1.00,
+    highFreqDamping: 0.0,
+    noiseQ: 1.0,
+    partialShift: 0.0,
     noiseFreqMult: 1.00,
     noiseAmpMult: 1.00,
     waveDamping: 0.9965,
@@ -1845,6 +1858,9 @@ const MATERIALS = {
   brass: {
     label: 'Brass',
     decayMult: 0.55,
+    highFreqDamping: 0.35,
+    noiseQ: 1.8,
+    partialShift: 0.008,
     noiseFreqMult: 1.35,
     noiseAmpMult: 1.20,
     waveDamping: 0.9920,
@@ -1858,6 +1874,9 @@ const MATERIALS = {
   nickel: {
     label: 'Nickel silver',
     decayMult: 0.85,
+    highFreqDamping: 0.12,
+    noiseQ: 1.4,
+    partialShift: 0.005,
     noiseFreqMult: 1.18,
     noiseAmpMult: 1.05,
     waveDamping: 0.9955,
@@ -1871,6 +1890,9 @@ const MATERIALS = {
   blisserite: {
     label: 'Blisserite',
     decayMult: 1.25,
+    highFreqDamping: 0.0,
+    noiseQ: 0.8,
+    partialShift: -0.003,
     noiseFreqMult: 0.75,
     noiseAmpMult: 0.65,
     waveDamping: 0.9975,
@@ -1884,6 +1906,9 @@ const MATERIALS = {
   thankium: {
     label: 'Thankium',
     decayMult: 1.45,
+    highFreqDamping: 0.0,
+    noiseQ: 0.7,
+    partialShift: -0.005,
     noiseFreqMult: 0.60,
     noiseAmpMult: 0.50,
     waveDamping: 0.9985,
@@ -2091,18 +2116,18 @@ function initAudio() {
   softClip.oversample = '2x';
 
   const comp = audioCtx.createDynamicsCompressor();
-  comp.threshold.value = -24;
-  comp.knee.value = 12;
-  comp.ratio.value = 6;
-  comp.attack.value = 0.003;
-  comp.release.value = 0.25;
+  comp.threshold.value = -18;
+  comp.knee.value = 14;
+  comp.ratio.value = 4;
+  comp.attack.value = 0.025;
+  comp.release.value = 0.3;
 
   const limiter = audioCtx.createDynamicsCompressor();
   limiter.threshold.value = -2;
   limiter.knee.value = 0;
   limiter.ratio.value = 20;
-  limiter.attack.value = 0.0005;
-  limiter.release.value = 0.06;
+  limiter.attack.value = 0.003;
+  limiter.release.value = 0.08;
 
   const delay = audioCtx.createDelay(0.5);
   delay.delayTime.value = 0.08;
@@ -2114,13 +2139,23 @@ function initAudio() {
 
   const irLen = Math.floor(audioCtx.sampleRate * 5);
   const irBuf = audioCtx.createBuffer(2, irLen, audioCtx.sampleRate);
+  const refTimes = [0.007, 0.013, 0.023, 0.037, 0.052, 0.071];
   for (let ch = 0; ch < 2; ch++) {
     const d = irBuf.getChannelData(ch);
+    let lpState = 0;
     for (let i = 0; i < irLen; i++) {
       const t = i / audioCtx.sampleRate;
       const env = Math.exp(-t / 2.2) * 0.4;
-      const earlyTail = t < 0.08 ? (1 + 3 * Math.exp(-t / 0.012)) : 1;
-      d[i] = (Math.random() * 2 - 1) * env * earlyTail;
+      let earlyTail = 1;
+      for (let ri = 0; ri < refTimes.length; ri++) {
+        const dist = Math.abs(t - refTimes[ri]);
+        if (dist < 0.002) earlyTail += 2.5 * (1 - dist / 0.002);
+      }
+      const raw = (Math.random() * 2 - 1) * env * earlyTail;
+      const fc = 8000 * Math.exp(-t * 1.5);
+      const alpha = 1 - Math.exp(-6.2832 * fc / audioCtx.sampleRate);
+      lpState = lpState + alpha * (raw - lpState);
+      d[i] = lpState;
     }
   }
   const convolver = audioCtx.createConvolver();
@@ -2220,8 +2255,10 @@ function buildModalBank() {
 
   const resonators = [];
   P.forEach((p, i) => {
-    const freq = Math.min(18000, fundamental * p.r);
-    const detune = 0.004 + Math.random() * 0.004;
+    const pShift = 1 + matLerp('partialShift') * (i / Math.max(1, P.length - 1));
+    const freq = Math.min(18000, fundamental * p.r * pShift);
+    let detune = 0.004 + Math.random() * 0.004;
+    if (currentShape === 'bowl') detune = 0.004 + i * 0.0005 + Math.random() * 0.001;
     const osc1 = ctx.createOscillator();
     osc1.type = 'sine';
     osc1.frequency.value = freq * (1 + detune);
@@ -2257,6 +2294,38 @@ function buildModalBank() {
   fmNoise.start();
   resonators.forEach(r => { r.osc1.start(); r.osc2.start(); });
   modalBank = { resonators, fmNoise, startedRunning: audioCtx.state === 'running' };
+  computeCouplingPairs();
+}
+
+function computeCouplingPairs() {
+  if (!modalBank) return;
+  const res = modalBank.resonators;
+  const n = res.length;
+  const pairs = [];
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const fi = res[i].freq, fj = res[j].freq;
+      const ratio = fj / fi;
+      const nearestInt = Math.round(ratio);
+      if (nearestInt >= 2 && nearestInt <= 6) {
+        const deviation = Math.abs(ratio - nearestInt) / nearestInt;
+        if (deviation < 0.08) {
+          pairs.push({ from: i, to: j, strength: (1 - deviation / 0.08) / nearestInt });
+        }
+      }
+      for (let k = 0; k < n; k++) {
+        if (k === i || k === j) continue;
+        const fk = res[k].freq;
+        const sumDev = Math.abs(fi + fj - fk) / fk;
+        if (sumDev < 0.05) {
+          const str = (1 - sumDev / 0.05) * 0.5;
+          pairs.push({ from: i, to: k, strength: str });
+          pairs.push({ from: j, to: k, strength: str });
+        }
+      }
+    }
+  }
+  modalBank.couplingPairs = pairs;
 }
 
 function ensureModalBankLive() {
@@ -2281,13 +2350,16 @@ function retuneModalBank() {
   modalBank.resonators.forEach((r, i) => {
     if (i >= P.length) return;
     const p = P[i];
-    const freq = Math.min(18000, fundamental * p.r);
-    const detune = 0.004 + ((i * 13) % 7) * 0.0006;
+    const pShift = 1 + matLerp('partialShift') * (i / Math.max(1, P.length - 1));
+    const freq = Math.min(18000, fundamental * p.r * pShift);
+    let detune = 0.004 + ((i * 13) % 7) * 0.0006;
+    if (currentShape === 'bowl' && shapeMorphT >= 1) detune = 0.004 + i * 0.0005;
     r.osc1.frequency.setTargetAtTime(freq * (1 + detune), now, tau);
     r.osc2.frequency.setTargetAtTime(freq * (1 - detune * 0.7), now, tau);
     r.freq = freq;
     r.idx = i;
   });
+  computeCouplingPairs();
 }
 
 const RUB_DRIVE_SCALE   = 1.4;
@@ -2295,6 +2367,8 @@ const STRIKE_SCALE      = 1.7;
 const AMP_SCALE         = 0.4275;
 const ENERGY_CAP        = 3.5;
 let sustainNorm = 0.5;
+let lastStrikeTime = 0;
+let lastStrikeForce = 0;
 function DECAY_FACTOR_MULT() { return 0.02 + sustainNorm * 0.78; }
 
 function updateModalBank(velocity, contactR, dt) {
@@ -2356,7 +2430,9 @@ function updateModalBank(velocity, contactR, dt) {
     const pressureExp = 1.5 - 1.2 * partialPos;
     const pressureWeight = Math.pow(rubState.pressure, pressureExp);
 
-    let tau = Math.max(0.15, p.decay * decayMult * DECAY_FACTOR_MULT());
+    const hfDamp = matLerp('highFreqDamping');
+    const hfFactor = 1 - hfDamp * (i / (P.length - 1));
+    let tau = Math.max(0.15, p.decay * decayMult * hfFactor * DECAY_FACTOR_MULT());
 
     if (flumieMode && (velocity > 0.01 || rubState.pressure > 0.05)) {
       const dist = (i - flumieSpeedPeak) / flumieSigma;
@@ -2376,7 +2452,8 @@ function updateModalBank(velocity, contactR, dt) {
                  * flumieGrip * 0.15 * dt;
       r.energy = r.energy * growth + seed;
     } else {
-      const decayFactor = Math.exp(-dt / tau);
+      const effectiveTau = tau / (1 + r.energy * 0.25);
+      const decayFactor = Math.exp(-dt / effectiveTau);
       const drive = p.amp * velocity * coupling * dirFactor * mWeight
                   * pressureWeight * me * rubState.contactForce * RUB_DRIVE_SCALE * dt;
       r.energy = r.energy * decayFactor + drive;
@@ -2396,6 +2473,18 @@ function updateModalBank(velocity, contactR, dt) {
     r.fmDepth2.gain.cancelScheduledValues(now);
     r.fmDepth2.gain.setTargetAtTime(wobble * 0.7, now, 0.08);
 
+    if (!flumieMode && r.energy > 0.05) {
+      const sinceStrike = (performance.now() - lastStrikeTime) / 1000;
+      if (sinceStrike > 0.3) {
+        const pitchShift = r.energy * r.energy * 0.001 / (1 + i * 0.2);
+        const bs = SHAPES[currentShape].bendSign || -1;
+        const detune = 0.004 + ((i * 13) % 7) * 0.0006;
+        r.osc1.frequency.cancelScheduledValues(now);
+        r.osc1.frequency.setTargetAtTime(r.freq * (1 + detune) * (1 + bs * pitchShift), now, 0.08);
+        r.osc2.frequency.cancelScheduledValues(now);
+        r.osc2.frequency.setTargetAtTime(r.freq * (1 - detune * 0.7) * (1 + bs * pitchShift), now, 0.08);
+      }
+    }
     if (flumieMode && r.energy > 0.1) {
       const physicsWobble = r.energy * 0.0003 * Math.sin(now * 3.7 + i * 2.1);
       const angularMod = Math.sin(theta * (1 + i * 0.37)) * 0.0004 * r.energy;
@@ -2428,12 +2517,14 @@ function updateModalBank(velocity, contactR, dt) {
 }
 
 const STRIKE_DUCK = 0.35;
-const STRIKE_TRANSIENT = 1.15;
-const STRIKE_TRANSIENT_TAU = 0.04;
+const STRIKE_TRANSIENT = 1.06;
+const STRIKE_TRANSIENT_TAU = 0.12;
 
 function strike(strikeR, strikeTheta, force) {
   initAudio(); resumeAudio();
   buildModalBank();
+  lastStrikeTime = performance.now();
+  lastStrikeForce = force || 1;
   const now = audioCtx.currentTime;
   const P = partials();
   const me = malletEnergy() * (force || 1);
@@ -2446,9 +2537,9 @@ function strike(strikeR, strikeTheta, force) {
     r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE, now, 0.012);
   });
 
-  const strikeJitter = 0.015 * (Math.random() - 0.5);
+  const strikeJitter = 0.007 * (Math.random() - 0.5);
   const jitteredR = Math.max(0, Math.min(1, strikeR + strikeJitter));
-  const thetaJitter = 0.06 * (Math.random() - 0.5);
+  const thetaJitter = 0.025 * (Math.random() - 0.5);
 
   P.forEach((p, i) => {
     const r = modalBank.resonators[i];
@@ -2463,21 +2554,26 @@ function strike(strikeR, strikeTheta, force) {
       const angular = Math.cos(angM * (strikeTheta + thetaJitter) + i * 0.37);
       shape = radial * angular;
     }
-    const locWeight = Math.max(0.18, Math.abs(shape));
+    const locWeight = Math.max(0.02, Math.abs(shape));
     const mWeight = malletPartialWeight(i, P.length);
-    const vary = 0.88 + Math.random() * 0.24;
+    const forceHarden = 1 + (force || 1) * malletNorm * 0.3 * (i / Math.max(1, P.length - 1));
+    const sympathetic = 1 + r.energy * 0.3;
+    const vary = 0.94 + Math.random() * 0.12;
     const strikeNerf = flumieMode ? 0.2 : 1;
-    const deposit = p.amp * locWeight * mWeight * me * STRIKE_SCALE * vary * strikeNerf;
+    let deposit = p.amp * locWeight * mWeight * forceHarden * sympathetic * me * STRIKE_SCALE * vary * strikeNerf;
+    if (currentShape === 'bao' && shapeMorphT >= 1 && strikeR < 0.15) {
+      deposit *= (i === 0 || i === 1 || i === 4) ? 1.5 : 0.4;
+    }
     r.energy = Math.min(ENERGY_CAP, r.energy + deposit);
   });
 
   const sTransient = flumieMode ? 1.01 : STRIKE_TRANSIENT;
-  const sAttack = flumieMode ? 0.015 : 0.003;
+  const sAttack = flumieMode ? 0.015 : 0.012 * Math.max(0.5, sizeLerp('decay'));
   const sTau = flumieMode ? 0.06 : STRIKE_TRANSIENT_TAU;
   modalBank.resonators.forEach((r) => {
     r.modGain.gain.cancelScheduledValues(now);
     r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE * sTransient, now, sAttack);
-    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE, now + 0.02, sTau);
+    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE, now + 0.05, sTau);
   });
   if (flumieMode) {
     modalBank.resonators.forEach(r => { r.energy *= 0.4; });
@@ -2486,17 +2582,18 @@ function strike(strikeR, strikeTheta, force) {
   const bendScale = flumieMode ? 0.25 : 1;
   modalBank.resonators.forEach((r, i) => {
     if (r.energy < 0.05) return;
-    const bendDepth = Math.min(0.035, r.energy * 0.012) / (1 + i * 0.3) * bendScale;
+    const bendDepth = Math.min(0.018, r.energy * 0.008) / (1 + i * 0.3) * bendScale;
     if (bendDepth < 0.0005) return;
     const detune = 0.004 + ((i * 13) % 7) * 0.0006;
     const f1 = r.freq * (1 + detune);
     const f2 = r.freq * (1 - detune * 0.7);
     r.osc1.frequency.cancelScheduledValues(now);
     r.osc2.frequency.cancelScheduledValues(now);
-    r.osc1.frequency.setTargetAtTime(f1 * (1 - bendDepth), now, 0.002);
-    r.osc2.frequency.setTargetAtTime(f2 * (1 - bendDepth), now, 0.002);
-    r.osc1.frequency.setTargetAtTime(f1, now + 0.005, 0.6);
-    r.osc2.frequency.setTargetAtTime(f2, now + 0.005, 0.6);
+    const bs = shape().bendSign || -1;
+    r.osc1.frequency.setTargetAtTime(f1 * (1 + bs * bendDepth), now, 0.004);
+    r.osc2.frequency.setTargetAtTime(f2 * (1 + bs * bendDepth), now, 0.004);
+    r.osc1.frequency.setTargetAtTime(f1, now + 0.012, 0.10);
+    r.osc2.frequency.setTargetAtTime(f2, now + 0.012, 0.10);
   });
 
   const nLen = Math.floor(audioCtx.sampleRate * 0.15);
@@ -2508,15 +2605,15 @@ function strike(strikeR, strikeTheta, force) {
   const nf = audioCtx.createBiquadFilter();
   nf.type = 'bandpass';
   const noiseFreqBase = flumieMode ? malletNoiseFreq() * 0.5 : malletNoiseFreq();
-  nf.frequency.value = noiseFreqBase + strikeR * (flumieMode ? 400 : 1500);
-  nf.Q.value = 1.2;
+  nf.frequency.value = noiseFreqBase + strikeR * (flumieMode ? 400 : 600);
+  nf.Q.value = matLerp('noiseQ');
   const ng = audioCtx.createGain();
   const strikeTotalE = modalBank.resonators.reduce((s, r) => s + r.energy, 0);
   const noiseScale = 1 / (1 + strikeTotalE * 0.3);
-  const flumieNoiseBoost = flumieMode ? 2.5 : 1;
-  const noiseAmp = (0.06 + strikeR * 0.18) * malletNoiseMult() * noiseScale * flumieNoiseBoost;
+  const noiseModeScale = flumieMode ? 2.5 : 0.35;
+  const noiseAmp = (0.06 + strikeR * 0.18) * malletNoiseMult() * noiseScale * noiseModeScale;
   ng.gain.setValueAtTime(noiseAmp, now);
-  const noiseDur = flumieMode ? 0.12 : 0.25;
+  const noiseDur = flumieMode ? 0.12 : 0.08;
   ng.gain.exponentialRampToValueAtTime(0.0001, now + noiseDur);
   noise.connect(nf); nf.connect(ng); ng.connect(masterGain);
   noise.start(now); noise.stop(now + 0.3);
@@ -2530,22 +2627,47 @@ function coupleModesStep(dt) {
   const totalEnergy = res.reduce((s, r) => s + r.energy, 0);
   if (totalEnergy < 0.01) return;
 
+  const cascadeMult = shape().cascadeMult || 1;
+  const energyNorm = Math.min(1, totalEnergy / (ENERGY_CAP * 2 * cascadeMult));
+  const regimeFactor = 1 + energyNorm * energyNorm * 4;
+
+  let bloomMult = 1;
+  if (lastStrikeForce > 0.3) {
+    const elapsed = (performance.now() - lastStrikeTime) / 1000;
+    if (elapsed < 1.0) {
+      bloomMult = 1 + lastStrikeForce * 3 *
+        (elapsed < 0.5 ? 1 : Math.exp(-(elapsed - 0.5) / 0.25));
+    }
+  }
+
   for (let i = 0; i < n - 1; i++) {
     const e1 = res[i].energy, e2 = res[i + 1].energy;
     const peak = Math.max(e1, e2);
     if (peak < 0.005) continue;
-    const transfer = peak * dt * 0.06 * (Math.random() - 0.48);
+    const transfer = peak * dt * 0.06 * regimeFactor * (Math.random() - 0.35);
     const clamped = Math.max(-e1 * 0.01, Math.min(e2 * 0.01, transfer));
     res[i].energy = Math.max(0, res[i].energy - clamped);
     res[i + 1].energy = Math.max(0, res[i + 1].energy + clamped);
   }
 
-  for (let i = 0; i < Math.min(6, n); i++) {
-    if (res[i].energy < 0.08) continue;
-    const target = i + 2 + Math.floor(Math.random() * Math.min(5, n - i - 2));
-    if (target >= n) continue;
-    const spawn = res[i].energy * dt * 0.015 * Math.random();
-    res[target].energy = Math.min(ENERGY_CAP, res[target].energy + spawn);
+  const spawnBase = 0.015 * regimeFactor * bloomMult;
+  const couplingPairs = modalBank.couplingPairs;
+  if (couplingPairs && couplingPairs.length > 0) {
+    for (let p = 0; p < couplingPairs.length; p++) {
+      const pair = couplingPairs[p];
+      const src = res[pair.from];
+      if (src.energy < 0.08) continue;
+      const spawn = src.energy * dt * spawnBase * pair.strength * Math.random();
+      res[pair.to].energy = Math.min(ENERGY_CAP, res[pair.to].energy + spawn);
+    }
+  } else {
+    for (let i = 0; i < Math.min(6, n); i++) {
+      if (res[i].energy < 0.08) continue;
+      const target = i + 2 + Math.floor(Math.random() * Math.min(5, n - i - 2));
+      if (target >= n) continue;
+      const spawn = res[i].energy * dt * spawnBase * Math.random();
+      res[target].energy = Math.min(ENERGY_CAP, res[target].energy + spawn);
+    }
   }
 }
 
@@ -4377,6 +4499,9 @@ document.querySelectorAll('#material-buttons .selector-btn').forEach(btn => {
     for (const k in curPal) palCopy[k] = curPal[k].slice();
     matMorphFrom = {
       decayMult: matLerp('decayMult'),
+      highFreqDamping: matLerp('highFreqDamping'),
+      noiseQ: matLerp('noiseQ'),
+      partialShift: matLerp('partialShift'),
       noiseFreqMult: matLerp('noiseFreqMult'),
       noiseAmpMult: matLerp('noiseAmpMult'),
       waveDamping: matLerp('waveDamping'),
@@ -5005,9 +5130,10 @@ function recRestoreSnapshot(snap) {
     const palCopy = {};
     for (const k in curPal) palCopy[k] = curPal[k].slice();
     matMorphFrom = {
-      decayMult: matLerp('decayMult'), noiseFreqMult: matLerp('noiseFreqMult'),
-      noiseAmpMult: matLerp('noiseAmpMult'), waveDamping: matLerp('waveDamping'),
-      palette: palCopy,
+      decayMult: matLerp('decayMult'), highFreqDamping: matLerp('highFreqDamping'),
+      noiseQ: matLerp('noiseQ'), partialShift: matLerp('partialShift'),
+      noiseFreqMult: matLerp('noiseFreqMult'), noiseAmpMult: matLerp('noiseAmpMult'),
+      waveDamping: matLerp('waveDamping'), palette: palCopy,
     };
     currentMaterial = snap.currentMaterial;
     matMorphT = 0; _paletteCacheKey = ''; _heatLUTKey = '';
@@ -5090,9 +5216,10 @@ function recApplyControl(key, value) {
         const palCopy = {};
         for (const k in curPal) palCopy[k] = curPal[k].slice();
         matMorphFrom = {
-          decayMult: matLerp('decayMult'), noiseFreqMult: matLerp('noiseFreqMult'),
-          noiseAmpMult: matLerp('noiseAmpMult'), waveDamping: matLerp('waveDamping'),
-          palette: palCopy,
+          decayMult: matLerp('decayMult'), highFreqDamping: matLerp('highFreqDamping'),
+          noiseQ: matLerp('noiseQ'), partialShift: matLerp('partialShift'),
+          noiseFreqMult: matLerp('noiseFreqMult'), noiseAmpMult: matLerp('noiseAmpMult'),
+          waveDamping: matLerp('waveDamping'), palette: palCopy,
         };
         currentMaterial = value; matMorphT = 0; _paletteCacheKey = ''; _heatLUTKey = '';
         document.querySelectorAll('#material-buttons .selector-btn').forEach(b =>
