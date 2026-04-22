@@ -1890,7 +1890,7 @@ const MATERIALS = {
   blisserite: {
     label: 'Blisserite',
     decayMult: 1.25,
-    highFreqDamping: 0.0,
+    highFreqDamping: 0.08,
     noiseQ: 0.8,
     partialShift: -0.003,
     noiseFreqMult: 0.75,
@@ -1906,7 +1906,7 @@ const MATERIALS = {
   thankium: {
     label: 'Thankium',
     decayMult: 1.45,
-    highFreqDamping: 0.0,
+    highFreqDamping: 0.05,
     noiseQ: 0.7,
     partialShift: -0.005,
     noiseFreqMult: 0.60,
@@ -2433,6 +2433,11 @@ function updateModalBank(velocity, contactR, dt) {
     const hfDamp = matLerp('highFreqDamping');
     const hfFactor = 1 - hfDamp * (i / (P.length - 1));
     let tau = Math.max(0.15, p.decay * decayMult * hfFactor * DECAY_FACTOR_MULT());
+    if (healingMode) {
+      const hfCeiling = 3500;
+      const freqDamp = 1 / (1 + Math.max(0, r.freq - hfCeiling) / hfCeiling);
+      tau *= freqDamp;
+    }
 
     if (flumieMode && (velocity > 0.01 || rubState.pressure > 0.05)) {
       const dist = (i - flumieSpeedPeak) / flumieSigma;
@@ -2563,7 +2568,8 @@ function strike(strikeR, strikeTheta, force) {
     const sympathetic = 1 + Math.min(r.energy, 1.5) * 0.2;
     const vary = 0.94 + Math.random() * 0.12;
     const strikeNerf = flumieMode ? 0.2 : 1;
-    let deposit = p.amp * locWeight * mWeight * forceHarden * sympathetic * me * STRIKE_SCALE * vary * strikeNerf * depositScale;
+    const healingFundBoost = healingMode ? (i < 3 ? 1.4 - i * 0.15 : 0.7) : 1;
+    let deposit = p.amp * locWeight * mWeight * forceHarden * sympathetic * me * STRIKE_SCALE * vary * strikeNerf * depositScale * healingFundBoost;
     if (currentShape === 'bao' && shapeMorphT >= 1 && strikeR < 0.15) {
       deposit *= (i === 0 || i === 1 || i === 4) ? 1.5 : 0.4;
     }
