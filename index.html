@@ -1980,6 +1980,7 @@ let currentHealingIdx = 0;
 let healingTarget = null;
 let appliedHealingPage = 0;
 let appliedHealingIdx = 0;
+let appliedPitchIdx = 5;
 
 function shape() { return SHAPES[currentShape]; }
 function material() { return MATERIALS[currentMaterial]; }
@@ -2668,16 +2669,22 @@ function updateModalBank(velocity, contactR, dt) {
 
 const STRIKE_DUCK = 0.35;
 
-function applyPendingHealingPreset() {
-  if (!healingMode) return;
-  if (currentHealingPage === appliedHealingPage && currentHealingIdx === appliedHealingIdx) return;
-  freezeModalBank();
-  applyHealingPreset(currentHealingIdx);
+function applyPendingPreset() {
+  if (healingMode) {
+    if (currentHealingPage === appliedHealingPage && currentHealingIdx === appliedHealingIdx) return;
+    freezeModalBank();
+    applyHealingPreset(currentHealingIdx);
+  } else {
+    if (currentPitchIdx === appliedPitchIdx) return;
+    freezeModalBank();
+    appliedPitchIdx = currentPitchIdx;
+    pitchRatio = PITCH_RATIOS[currentPitchIdx];
+  }
 }
 
 function strike(strikeR, strikeTheta, force) {
   initAudio(); resumeAudio();
-  applyPendingHealingPreset();
+  applyPendingPreset();
   buildModalBank();
   lastStrikeTime = performance.now();
   lastStrikeForce = force || 1;
@@ -4418,7 +4425,7 @@ function savePrefs() {
     if (p.healingMode !== undefined) healingMode = p.healingMode;
     if (p.currentHealingPage !== undefined) currentHealingPage = Math.min(p.currentHealingPage, HEALING_PAGES.length - 1);
     if (p.currentHealingIdx !== undefined) currentHealingIdx = Math.min(p.currentHealingIdx, 5);
-    if (p.currentPitchIdx !== undefined) { currentPitchIdx = p.currentPitchIdx; pitchRatio = PITCH_RATIOS[currentPitchIdx]; }
+    if (p.currentPitchIdx !== undefined) { currentPitchIdx = p.currentPitchIdx; pitchRatio = PITCH_RATIOS[currentPitchIdx]; appliedPitchIdx = currentPitchIdx; }
     if (p.flumieMode !== undefined) flumieMode = p.flumieMode;
     if (p.malletNorm !== undefined) malletNorm = p.malletNorm;
     appliedHealingPage = currentHealingPage;
@@ -4622,32 +4629,9 @@ document.getElementById('pitch-rack').addEventListener('click', (e) => {
 
   if (newIdx === currentPitchIdx) return;
   currentPitchIdx = newIdx;
-  pitchRatio = PITCH_RATIOS[currentPitchIdx];
   updatePitchRack();
   recPushEvent({ type: 'control', key: 'pitch', value: newIdx });
   savePrefs();
-  if (modalBank && audioCtx) {
-    const now = audioCtx.currentTime;
-    modalBank.resonators.forEach(r => {
-      r.energy = 0;
-      r.modGain.gain.cancelScheduledValues(now);
-      r.modGain.gain.setValueAtTime(0, now);
-      r.osc1.frequency.cancelScheduledValues(now);
-      r.osc2.frequency.cancelScheduledValues(now);
-    });
-    const fundamental = gongFundamental();
-    const P = partials();
-    modalBank.resonators.forEach((r, i) => {
-      if (i >= P.length) return;
-      const freq = Math.min(18000, fundamental * P[i].r);
-      const d = modeSplitDetune(i);
-      r.osc1.frequency.setValueAtTime(freq * (1 + d), now);
-      r.osc2.frequency.setValueAtTime(freq * (1 - d * 0.7), now);
-      r.freq = freq;
-      r.detune = d;
-    });
-  }
-  strike(0.35 + Math.random() * 0.25, Math.random() * Math.PI * 2, 1.0);
 });
 
 document.getElementById('tuning-toggle').addEventListener('click', (e) => {
@@ -4866,7 +4850,7 @@ function handleStrikeAt(p, contactSize) {
 function beginRub(e, p) {
   if (!p.inside) return;
   unlockAudio();
-  applyPendingHealingPreset();
+  applyPendingPreset();
   interactionMode = 'rub';
   rubActive = true;
   rubState.x = rubState.prevX = p.px;
@@ -5484,28 +5468,7 @@ function recApplyControl(key, value) {
       const newIdx = value;
       if (newIdx !== currentPitchIdx) {
         currentPitchIdx = newIdx;
-        pitchRatio = PITCH_RATIOS[currentPitchIdx];
         updatePitchRack();
-        if (modalBank && audioCtx) {
-          const now = audioCtx.currentTime;
-          modalBank.resonators.forEach(r => {
-            r.energy = 0;
-            r.modGain.gain.cancelScheduledValues(now);
-            r.modGain.gain.setValueAtTime(0, now);
-          });
-          const fundamental = gongFundamental();
-          const P = partials();
-          modalBank.resonators.forEach((r, i) => {
-            if (i >= P.length) return;
-            const freq = Math.min(18000, fundamental * P[i].r);
-            const d = modeSplitDetune(i);
-            r.osc1.frequency.setValueAtTime(freq * (1 + d), now);
-            r.osc2.frequency.setValueAtTime(freq * (1 - d * 0.7), now);
-            r.freq = freq;
-            r.detune = d;
-          });
-        }
-        strike(0.35 + Math.random() * 0.25, Math.random() * Math.PI * 2, 1.0);
       }
       break;
     }
