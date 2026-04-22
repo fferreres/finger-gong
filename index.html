@@ -439,6 +439,27 @@
     transition: left 0.3s ease, width 0.3s ease;
     pointer-events: none;
   }
+  .bliss-dots {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin-top: -4px;
+    margin-bottom: 4px;
+    visibility: hidden;
+  }
+  body[data-healing="true"] .bliss-dots { visibility: visible; }
+  .bliss-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    opacity: 0.25;
+    transition: opacity 0.3s ease, background 0.3s ease;
+  }
+  .bliss-dot.active {
+    opacity: 1;
+    background: var(--gold);
+  }
   .mallet-pick.bliss-hint {
     animation: blissBloom 3s ease-in-out infinite;
   }
@@ -1503,8 +1524,8 @@
   }
 </style>
 </head>
-<body data-skin="hearth">
-<script>(function(){var s=localStorage.getItem('skin');if(s)document.body.dataset.skin=s})();</script>
+<body data-skin="hearth" data-healing="true">
+<script>(function(){var s=localStorage.getItem('skin');if(s)document.body.dataset.skin=s;var h=localStorage.getItem('healingMode');if(h!==null)document.body.dataset.healing=h})();</script>
 
 <div class="start-overlay" id="start-overlay">
   <div class="start-whisper">Touch to Awaken</div>
@@ -1585,8 +1606,13 @@
         <div class="pitch-rack" id="pitch-rack">
           <div class="tuning-toggle" id="tuning-toggle">
             <div class="tuning-toggle-slider" id="tuning-slider"></div>
-            <button class="tuning-toggle-option active" data-tuning="pentatonic">Scale</button>
-            <button class="tuning-toggle-option" data-tuning="healing">Bliss</button>
+            <button class="tuning-toggle-option" data-tuning="pentatonic">Scale</button>
+            <button class="tuning-toggle-option active" data-tuning="healing">Bliss</button>
+          </div>
+          <div class="bliss-dots" id="bliss-dots">
+            <span class="bliss-dot active"></span>
+            <span class="bliss-dot"></span>
+            <span class="bliss-dot"></span>
           </div>
           <button class="pitch-pick active" data-pitch="5" title="C — octave">C'</button>
           <button class="pitch-pick" data-pitch="4" title="A">A</button>
@@ -1666,9 +1692,9 @@
         <div class="control">
           <div class="control-label">
             <span class="control-name">Sustain</span>
-            <span class="control-value" id="sustain-value">50%</span>
+            <span class="control-value" id="sustain-value">25%</span>
           </div>
-          <input type="range" id="sustain-slider" min="0" max="1" step="0.001" value="0.5">
+          <input type="range" id="sustain-slider" min="0" max="1" step="0.001" value="0.25">
         </div>
         <div class="control">
           <div class="control-label">
@@ -1733,6 +1759,7 @@ const SHAPES = {
     cascadeMult: 1.0,
     splitMult: 0.7,
     driftMult: 1.0,
+    healingPeak: 4, healingSigma: 5, healingDecay: 1.0,
     partials: [
       { r: 1.00, amp: 1.00, decay: 9.0 },
       { r: 1.58, amp: 1.05, decay: 8.0 },
@@ -1757,6 +1784,7 @@ const SHAPES = {
     cascadeMult: 1.2,
     splitMult: 0.8,
     driftMult: 0.6,
+    healingPeak: 2, healingSigma: 3.5, healingDecay: 1.2,
     partials: [
       { r: 1.00, amp: 1.30, decay: 10.0 },
       { r: 1.98, amp: 0.60, decay: 8.0 },
@@ -1781,6 +1809,7 @@ const SHAPES = {
     cascadeMult: 1.3,
     splitMult: 1.0,
     driftMult: 0.4,
+    healingPeak: 5, healingSigma: 4, healingDecay: 0.75,
     partials: [
       { r: 0.50, amp: 0.45, decay: 14.0 },
       { r: 1.00, amp: 1.20, decay: 11.0 },
@@ -1805,6 +1834,7 @@ const SHAPES = {
     cascadeMult: 0.5,
     splitMult: 0.5,
     driftMult: 0.7,
+    healingPeak: 5, healingSigma: 8, healingDecay: 0.65,
     partials: [
       { r: 1.00, amp: 1.05, decay: 4.5 },
       { r: 1.82, amp: 0.78, decay: 4.2 },
@@ -1829,6 +1859,7 @@ const SHAPES = {
     cascadeMult: 0.7,
     splitMult: 1.4,
     driftMult: 1.8,
+    healingPeak: 3, healingSigma: 3, healingDecay: 1.8,
     modeSplit: [0.0040, 0.0038, 0.0037, 0.0036, 0.0035, 0.0034, 0.0033, 0.0032, 0.0031, 0.0030, 0.0029, 0.0028, 0.0027, 0.0026],
     partials: [
       { r: 1.00,  amp: 1.20,  decay: 22.0 },
@@ -1944,9 +1975,11 @@ let interactionMode = 'strike';
 let currentShape = 'chau';
 let currentMaterial = 'bronze';
 
-let healingMode = false;
-let currentHealingIdx = 5;
+let healingMode = true;
+let currentHealingIdx = 0;
 let healingTarget = null;
+let appliedHealingPage = 0;
+let appliedHealingIdx = 0;
 
 function shape() { return SHAPES[currentShape]; }
 function material() { return MATERIALS[currentMaterial]; }
@@ -1983,7 +2016,17 @@ const HEALING_PARTIALS = [
 let _morphedPartials = null;
 let _morphedT = -1;
 function partials() {
-  if (healingMode) return HEALING_PARTIALS;
+  if (healingMode) {
+    const sh = shape();
+    const peak = sh.healingPeak ?? 4;
+    const sigma = sh.healingSigma ?? 4;
+    const dm = sh.healingDecay ?? 1;
+    return HEALING_PARTIALS.map((p, i) => {
+      const d = (i - peak) / sigma;
+      const w = Math.exp(-0.5 * d * d);
+      return { r: p.r, amp: p.amp * (0.65 + 0.35 * w), decay: p.decay * dm };
+    });
+  }
   if (shapeMorphT >= 1 || !shapeFrom) return shape().partials;
   if (_morphedT === shapeMorphT) return _morphedPartials;
   const t = morphEase(shapeMorphT);
@@ -2256,6 +2299,53 @@ document.addEventListener('click', unlockAudio, true);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) resumeAudio(); });
 
 let modalBank = null;
+const frozenBanks = [];
+const MAX_FROZEN = 3;
+const FROZEN_DECAY = 5;
+
+function freezeModalBank() {
+  if (!modalBank || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  modalBank.resonators.forEach(r => {
+    const amp = r.energy * AMP_SCALE;
+    r.modGain.gain.cancelScheduledValues(now);
+    if (amp > 0.0001) {
+      r.modGain.gain.setValueAtTime(amp, now);
+      r.modGain.gain.exponentialRampToValueAtTime(0.0001, now + FROZEN_DECAY);
+    } else {
+      r.modGain.gain.setValueAtTime(0, now);
+    }
+    r.fmDepth1.gain.cancelScheduledValues(now);
+    r.fmDepth1.gain.setTargetAtTime(0, now, 0.5);
+    r.fmDepth2.gain.cancelScheduledValues(now);
+    r.fmDepth2.gain.setTargetAtTime(0, now, 0.5);
+  });
+  frozenBanks.push({ bank: modalBank, expires: now + FROZEN_DECAY + 0.5 });
+  while (frozenBanks.length > MAX_FROZEN) {
+    teardownBank(frozenBanks.shift().bank);
+  }
+  modalBank = null;
+}
+
+function teardownBank(bank) {
+  bank.resonators.forEach(r => {
+    try { r.osc1.stop(); } catch(e) {}
+    try { r.osc2.stop(); } catch(e) {}
+    r.modGain.disconnect();
+  });
+  bank.fmSources.forEach(s => { try { s.stop(); } catch(e) {} });
+}
+
+function cleanupFrozenBanks() {
+  if (!frozenBanks.length || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  for (let i = frozenBanks.length - 1; i >= 0; i--) {
+    if (now >= frozenBanks[i].expires) {
+      teardownBank(frozenBanks[i].bank);
+      frozenBanks.splice(i, 1);
+    }
+  }
+}
 
 function buildModalBank() {
   if (modalBank) return;
@@ -2411,7 +2501,7 @@ const RUB_DRIVE_SCALE   = 1.4;
 const STRIKE_SCALE      = 1.3;
 const AMP_SCALE         = 0.25;
 const ENERGY_CAP        = 3.5;
-let sustainNorm = 0.5;
+let sustainNorm = 0.25;
 let lastStrikeTime = 0;
 let lastStrikeForce = 0;
 function DECAY_FACTOR_MULT() { return 0.02 + sustainNorm * 0.78; }
@@ -2578,8 +2668,16 @@ function updateModalBank(velocity, contactR, dt) {
 
 const STRIKE_DUCK = 0.35;
 
+function applyPendingHealingPreset() {
+  if (!healingMode) return;
+  if (currentHealingPage === appliedHealingPage && currentHealingIdx === appliedHealingIdx) return;
+  freezeModalBank();
+  applyHealingPreset(currentHealingIdx);
+}
+
 function strike(strikeR, strikeTheta, force) {
   initAudio(); resumeAudio();
+  applyPendingHealingPreset();
   buildModalBank();
   lastStrikeTime = performance.now();
   lastStrikeForce = force || 1;
@@ -2621,7 +2719,7 @@ function strike(strikeR, strikeTheta, force) {
     const sympathetic = 1 + Math.min(r.energy, 1.5) * 0.2;
     const vary = 0.94 + Math.random() * 0.12;
     const strikeNerf = flumieMode ? 0.2 : 1;
-    const healingFundBoost = 1;
+    const healingFundBoost = healingMode ? (i <= 4 ? 0.7 + i * 0.15 : Math.max(0.4, 1.3 - (i - 4) * 0.1)) : 1;
     let deposit = p.amp * locWeight * mWeight * forceHarden * sympathetic * me * STRIKE_SCALE * vary * strikeNerf * depositScale * healingFundBoost;
     if (currentShape === 'bao' && shapeMorphT >= 1 && strikeR < 0.15) {
       deposit *= (i === 0 || i === 1 || i === 4) ? 1.5 : 0.4;
@@ -2629,7 +2727,7 @@ function strike(strikeR, strikeTheta, force) {
     r.energy = Math.min(ENERGY_CAP, r.energy + deposit);
   });
 
-  const sAttack = flumieMode ? 0.015 : 0.012 * Math.max(0.5, sizeLerp('decay'));
+  const sAttack = flumieMode ? 0.015 : healingMode ? 0.025 : 0.012 * Math.max(0.5, sizeLerp('decay'));
   modalBank.resonators.forEach((r) => {
     r.modGain.gain.cancelScheduledValues(now);
     r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE, now, sAttack);
@@ -2663,7 +2761,7 @@ function strike(strikeR, strikeTheta, force) {
   const ng = audioCtx.createGain();
   const strikeTotalE = modalBank.resonators.reduce((s, r) => s + r.energy, 0);
   const noiseScale = 1 / (1 + strikeTotalE * 0.3);
-  const noiseModeScale = flumieMode ? 2.5 : 0.35;
+  const noiseModeScale = flumieMode ? 2.5 : healingMode ? 0.12 : 0.35;
   const noiseAmp = (0.06 + strikeR * 0.18) * malletNoiseMult() * noiseScale * noiseModeScale;
   ng.gain.setValueAtTime(noiseAmp, now);
   const noiseDur = flumieMode ? 0.12 : 0.08;
@@ -4167,6 +4265,7 @@ function setFlumieMode(enabled) {
   updateMalletToggle();
   updateMalletDisplay();
   recPushEvent({ type: 'control', key: 'flumieMode', value: enabled });
+  savePrefs();
 }
 gongSlider.addEventListener('input', (e) => {
   if (healingMode) return;
@@ -4197,6 +4296,7 @@ document.getElementById('mallet-rack').addEventListener('click', (e) => {
   malletNorm = MALLET_NORMS[idx];
   updateMalletDisplay();
   recPushEvent({ type: 'control', key: 'mallet', value: malletNorm });
+  savePrefs();
 });
 
 document.getElementById('mallet-toggle').addEventListener('click', (e) => {
@@ -4272,14 +4372,59 @@ const PITCH_NAMES = ['C', 'D', 'E', 'G', 'A', "C'"];
 let currentPitchIdx = 5;
 pitchRatio = PITCH_RATIOS[5];
 
-const HEALING_PRESETS = [
-  { freq: 174, label: '174', name: 'Relief' },
-  { freq: 285, label: '285', name: 'Renewal' },
-  { freq: 396, label: '396', name: 'Release' },
-  { freq: 528, label: '528', name: 'Love' },
-  { freq: 639, label: '639', name: 'Connection' },
-  { freq: 852, label: '852', name: 'Intuition' },
+const HEALING_PAGES = [
+  [
+    { freq: 174, label: '174', name: 'Relief' },
+    { freq: 417, label: '417', name: 'Change' },
+    { freq: 396, label: '396', name: 'Release' },
+    { freq: 528, label: '528', name: 'Love' },
+    { freq: 639, label: '639', name: 'Connection' },
+    { freq: 852, label: '852', name: 'Intuition' },
+  ],
+  [
+    { freq: 285, label: '285', name: 'Renewal' },
+    { freq: 741, label: '741', name: 'Expression' },
+    { freq: 963, label: '963', name: 'Awakening' },
+    { freq: 432, label: '432', name: 'Nature' },
+    { freq: 136, label: '136', name: 'Om' },
+    { freq: 111, label: '111', name: 'Temple' },
+  ],
+  [
+    { freq: 128, label: '128', name: 'Healing' },
+    { freq: 222, label: '222', name: 'Balance' },
+    { freq: 256, label: '256', name: 'Ground' },
+    { freq: 444, label: '444', name: 'Angels' },
+    { freq: 512, label: '512', name: 'Clarity' },
+    { freq: 777, label: '777', name: 'Spirit' },
+  ],
 ];
+let currentHealingPage = 0;
+function healingPresets() { return HEALING_PAGES[currentHealingPage]; }
+
+function savePrefs() {
+  try {
+    localStorage.setItem('fg_prefs', JSON.stringify({
+      healingMode, currentHealingPage, currentHealingIdx,
+      currentPitchIdx, flumieMode, malletNorm,
+    }));
+    localStorage.setItem('healingMode', healingMode ? 'true' : 'false');
+  } catch(e) {}
+}
+(function restorePrefs() {
+  try {
+    const raw = localStorage.getItem('fg_prefs');
+    if (!raw) return;
+    const p = JSON.parse(raw);
+    if (p.healingMode !== undefined) healingMode = p.healingMode;
+    if (p.currentHealingPage !== undefined) currentHealingPage = Math.min(p.currentHealingPage, HEALING_PAGES.length - 1);
+    if (p.currentHealingIdx !== undefined) currentHealingIdx = Math.min(p.currentHealingIdx, 5);
+    if (p.currentPitchIdx !== undefined) { currentPitchIdx = p.currentPitchIdx; pitchRatio = PITCH_RATIOS[currentPitchIdx]; }
+    if (p.flumieMode !== undefined) flumieMode = p.flumieMode;
+    if (p.malletNorm !== undefined) malletNorm = p.malletNorm;
+    appliedHealingPage = currentHealingPage;
+    appliedHealingIdx = currentHealingIdx;
+  } catch(e) {}
+})();
 
 function sizeParamsFromFreq(freq) {
   const sizes = GONG_SIZES;
@@ -4318,7 +4463,9 @@ function sizeParamsFromFreq(freq) {
 }
 
 function applyHealingPreset(idx) {
-  const preset = HEALING_PRESETS[idx];
+  appliedHealingPage = currentHealingPage;
+  appliedHealingIdx = idx;
+  const preset = healingPresets()[idx];
   const targetBaseFreq = preset.freq / shape().pitchMult;
   pitchRatio = 1;
   sizeMorphFrom = {
@@ -4336,6 +4483,7 @@ function applyHealingPreset(idx) {
   };
   sizeMorphT = 1;
   updateGongDisplay();
+  buildModalBank();
   retuneModalBank();
   if (modalBank && audioCtx) {
     const now = audioCtx.currentTime;
@@ -4371,7 +4519,7 @@ function updatePitchRackLabels() {
   if (healingMode) {
     buttons.forEach(btn => {
       const idx = parseInt(btn.dataset.pitch);
-      const preset = HEALING_PRESETS[idx];
+      const preset = healingPresets()[idx];
       btn.innerHTML = `<span class="hz">${preset.label}</span><span class="intent">${preset.name}</span>`;
       btn.title = preset.name + ' — ' + preset.freq + ' Hz';
       btn.classList.toggle('active', idx === currentHealingIdx);
@@ -4395,15 +4543,29 @@ function updateBlissHints() {
   });
 }
 
+function updateBlissDots() {
+  document.querySelectorAll('.bliss-dot').forEach((dot, i) => {
+    dot.classList.toggle('active', i === currentHealingPage);
+  });
+}
+
 function setHealingMode(enabled) {
   const wasExcited = modalBank && modalBank.resonators.some(r => r.energy > 1e-4);
-  if (modalBank) {
+  if (wasExcited && enabled) {
+    freezeModalBank();
+  } else if (modalBank) {
     modalBank.resonators.forEach(r => { r.energy = 0; });
   }
+  if (!enabled) {
+    frozenBanks.forEach(f => teardownBank(f.bank));
+    frozenBanks.length = 0;
+  }
   healingMode = enabled;
+  if (enabled) { currentHealingPage = 0; currentHealingIdx = 0; }
   document.body.setAttribute('data-healing', enabled ? 'true' : 'false');
   updateTuningToggle();
   updatePitchRackLabels();
+  updateBlissDots();
   updateBlissHints();
   const applyRetune = () => {
     if (enabled) {
@@ -4427,11 +4589,12 @@ function setHealingMode(enabled) {
       }
     }
   };
-  if (wasExcited) {
+  if (wasExcited && !enabled) {
     setTimeout(applyRetune, 80);
   } else {
     applyRetune();
   }
+  savePrefs();
 }
 
 function updatePitchRack() {
@@ -4450,21 +4613,10 @@ document.getElementById('pitch-rack').addEventListener('click', (e) => {
 
   if (healingMode) {
     if (newIdx === currentHealingIdx) return;
-    const wasExcited = modalBank && modalBank.resonators.some(r => r.energy > 1e-4);
     currentHealingIdx = newIdx;
     updatePitchRack();
     recPushEvent({ type: 'control', key: 'healingPreset', value: newIdx });
-    if (modalBank) {
-      modalBank.resonators.forEach(r => { r.energy = 0; });
-    }
-    const doRetune = () => {
-      applyHealingPreset(currentHealingIdx);
-    };
-    if (wasExcited) {
-      setTimeout(doRetune, 80);
-    } else {
-      doRetune();
-    }
+    savePrefs();
     return;
   }
 
@@ -4473,6 +4625,7 @@ document.getElementById('pitch-rack').addEventListener('click', (e) => {
   pitchRatio = PITCH_RATIOS[currentPitchIdx];
   updatePitchRack();
   recPushEvent({ type: 'control', key: 'pitch', value: newIdx });
+  savePrefs();
   if (modalBank && audioCtx) {
     const now = audioCtx.currentTime;
     modalBank.resonators.forEach(r => {
@@ -4501,12 +4654,30 @@ document.getElementById('tuning-toggle').addEventListener('click', (e) => {
   const opt = e.target.closest('.tuning-toggle-option');
   if (!opt) return;
   const wantHealing = opt.dataset.tuning === 'healing';
+  if (wantHealing && healingMode) {
+    currentHealingPage = (currentHealingPage + 1) % HEALING_PAGES.length;
+    currentHealingIdx = 0;
+    updateBlissDots();
+    updatePitchRackLabels();
+    recPushEvent({ type: 'control', key: 'healingPage', value: currentHealingPage });
+    savePrefs();
+    return;
+  }
   if (wantHealing === healingMode) return;
   setHealingMode(wantHealing);
   recPushEvent({ type: 'control', key: 'healingMode', value: wantHealing });
 });
 
-requestAnimationFrame(() => { updateTuningToggle(); });
+requestAnimationFrame(() => {
+  document.body.setAttribute('data-healing', healingMode ? 'true' : 'false');
+  updateTuningToggle();
+  updatePitchRackLabels();
+  updateBlissDots();
+  updateMalletDisplay();
+  updateMalletToggle();
+  updateBlissHints();
+  if (healingMode) applyHealingPreset(currentHealingIdx);
+});
 
 // Dampen — hold to gradually silence
 let dampenActive = false;
@@ -4695,6 +4866,7 @@ function handleStrikeAt(p, contactSize) {
 function beginRub(e, p) {
   if (!p.inside) return;
   unlockAudio();
+  applyPendingHealingPreset();
   interactionMode = 'rub';
   rubActive = true;
   rubState.x = rubState.prevX = p.px;
@@ -4825,6 +4997,7 @@ let recState = 'idle';
 function loop() {
   try {
   if (modalBank && !modalBank.startedRunning) ensureModalBankLive();
+  cleanupFrozenBanks();
   const now = performance.now();
   const dt = Math.min(0.1, (now - lastLoopT) / 1000);
   lastLoopT = now;
@@ -5132,7 +5305,7 @@ function recCaptureSnapshot() {
   return {
     currentShape, currentMaterial, gongSizeIdx, currentPitchIdx,
     pitchRatio, malletNorm, sustainNorm, spaceNorm, volumeNorm, chladniMode,
-    healingMode, currentHealingIdx, flumieMode,
+    healingMode, currentHealingIdx, currentHealingPage, flumieMode,
   };
 }
 
@@ -5239,13 +5412,16 @@ function recRestoreSnapshot(snap) {
     document.getElementById('sand-reset').classList.toggle('visible', chladniMode);
     if (chladniMode) { chladniEnvelope.fill(0); initSandParticles(); sandFadeIn = 0; sandTransition = 0; }
   }
+  if (snap.currentHealingPage !== undefined) currentHealingPage = snap.currentHealingPage;
   if (snap.healingMode !== undefined && snap.healingMode !== healingMode) {
-    currentHealingIdx = snap.currentHealingIdx !== undefined ? snap.currentHealingIdx : 5;
+    currentHealingIdx = snap.currentHealingIdx !== undefined ? snap.currentHealingIdx : 0;
     setHealingMode(snap.healingMode);
+    updateBlissDots();
   } else if (snap.healingMode && snap.currentHealingIdx !== undefined && snap.currentHealingIdx !== currentHealingIdx) {
     currentHealingIdx = snap.currentHealingIdx;
     applyHealingPreset(currentHealingIdx);
     updatePitchRack();
+    updateBlissDots();
   }
 }
 
@@ -5345,20 +5521,18 @@ function recApplyControl(key, value) {
     case 'healingMode':
       if (value !== healingMode) setHealingMode(value);
       break;
+    case 'healingPage':
+      currentHealingPage = value;
+      updateBlissDots();
+      updatePitchRackLabels();
+      break;
     case 'healingPreset': {
       const newIdx = value;
       if (newIdx !== currentHealingIdx) {
         currentHealingIdx = newIdx;
         updatePitchRack();
+        freezeModalBank();
         applyHealingPreset(currentHealingIdx);
-        if (modalBank && audioCtx) {
-          const now = audioCtx.currentTime;
-          modalBank.resonators.forEach(r => {
-            r.energy = 0;
-            r.modGain.gain.cancelScheduledValues(now);
-            r.modGain.gain.setValueAtTime(0, now);
-          });
-        }
         strike(0.35 + Math.random() * 0.25, Math.random() * Math.PI * 2, 1.0);
       }
       break;
