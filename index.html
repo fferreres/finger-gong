@@ -1829,21 +1829,22 @@ const SHAPES = {
     cascadeMult: 0.7,
     splitMult: 1.4,
     driftMult: 1.8,
+    modeSplit: [0.0040, 0.0038, 0.0037, 0.0036, 0.0035, 0.0034, 0.0033, 0.0032, 0.0031, 0.0030, 0.0029, 0.0028, 0.0027, 0.0026],
     partials: [
-      { r: 1.00,  amp: 1.20,  decay: 45.0 },
-      { r: 2.71,  amp: 0.90,  decay: 38.0 },
-      { r: 5.41,  amp: 0.55,  decay: 28.0 },
-      { r: 8.86,  amp: 0.32,  decay: 20.0 },
-      { r: 13.34, amp: 0.18,  decay: 14.0 },
-      { r: 18.80, amp: 0.10,  decay: 9.5 },
-      { r: 25.40, amp: 0.06,  decay: 6.5 },
-      { r: 33.0,  amp: 0.03,  decay: 4.5 },
-      { r: 41.8,  amp: 0.018, decay: 3.2 },
-      { r: 51.6,  amp: 0.010, decay: 2.2 },
-      { r: 62.5,  amp: 0.006, decay: 1.6 },
-      { r: 74.5,  amp: 0.003, decay: 1.1 },
-      { r: 87.6,  amp: 0.002, decay: 0.8 },
-      { r: 102.0, amp: 0.001, decay: 0.5 },
+      { r: 1.00,  amp: 1.20,  decay: 22.0 },
+      { r: 2.71,  amp: 0.90,  decay: 18.6 },
+      { r: 5.41,  amp: 0.55,  decay: 13.7 },
+      { r: 8.86,  amp: 0.32,  decay: 9.8 },
+      { r: 13.34, amp: 0.18,  decay: 6.8 },
+      { r: 18.80, amp: 0.10,  decay: 4.6 },
+      { r: 25.40, amp: 0.06,  decay: 3.2 },
+      { r: 33.0,  amp: 0.03,  decay: 2.2 },
+      { r: 41.8,  amp: 0.018, decay: 1.6 },
+      { r: 51.6,  amp: 0.010, decay: 1.1 },
+      { r: 62.5,  amp: 0.006, decay: 0.8 },
+      { r: 74.5,  amp: 0.003, decay: 0.5 },
+      { r: 87.6,  amp: 0.002, decay: 0.4 },
+      { r: 102.0, amp: 0.001, decay: 0.2 },
     ],
   },
 };
@@ -2078,9 +2079,11 @@ function malletNoiseFreq()  {
 }
 const MODE_SPLIT = [0.003, 0.0055, 0.002, 0.006, 0.0025, 0.005, 0.0035, 0.004, 0.007, 0.003, 0.0055, 0.002, 0.0045, 0.003];
 function modeSplitDetune(i) {
-  const sm = (SHAPES[currentShape] || {}).splitMult || 1;
+  const sh = SHAPES[currentShape] || {};
+  const sm = sh.splitMult || 1;
   const freqScale = Math.sqrt(65 / Math.max(65, gongFundamental()));
-  const base = (MODE_SPLIT[i] || 0.004) * sm * freqScale;
+  const splits = sh.modeSplit || MODE_SPLIT;
+  const base = (splits[i] || 0.004) * sm * freqScale;
   return base * (0.75 + Math.random() * 0.5);
 }
 function malletPartialWeight(i, total) {
@@ -2260,14 +2263,23 @@ function buildModalBank() {
     b6 = w * 0.115926;
   }
 
-  const fmNoise = ctx.createBufferSource();
-  fmNoise.buffer = noiseBuf;
-  fmNoise.loop = true;
-  const fmFilter = ctx.createBiquadFilter();
-  fmFilter.type = 'lowpass';
-  fmFilter.frequency.value = 5;
-  fmFilter.Q.value = 0.5;
-  fmNoise.connect(fmFilter);
+  const FM_GROUPS = 3;
+  const fmSources = [];
+  const fmFilters = [];
+  for (let g = 0; g < FM_GROUPS; g++) {
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuf;
+    src.loop = true;
+    src.loopStart = g * 4.5;
+    src.loopEnd = (g + 1) * 4.5;
+    const filt = ctx.createBiquadFilter();
+    filt.type = 'lowpass';
+    filt.frequency.value = 4 + g * 1.5;
+    filt.Q.value = 0.5;
+    src.connect(filt);
+    fmSources.push(src);
+    fmFilters.push(filt);
+  }
 
   const resonators = [];
   P.forEach((p, i) => {
@@ -2292,8 +2304,8 @@ function buildModalBank() {
     const fmDepth2 = ctx.createGain();
     fmDepth1.gain.value = 0;
     fmDepth2.gain.value = 0;
-    fmFilter.connect(fmDepth1);
-    fmFilter.connect(fmDepth2);
+    fmFilters[i % FM_GROUPS].connect(fmDepth1);
+    fmFilters[i % FM_GROUPS].connect(fmDepth2);
     fmDepth1.connect(osc1.frequency);
     fmDepth2.connect(osc2.frequency);
 
@@ -2307,9 +2319,9 @@ function buildModalBank() {
     });
   });
 
-  fmNoise.start();
+  fmSources.forEach(s => s.start());
   resonators.forEach(r => { r.osc1.start(); r.osc2.start(); });
-  modalBank = { resonators, fmNoise, startedRunning: audioCtx.state === 'running' };
+  modalBank = { resonators, fmSources, startedRunning: audioCtx.state === 'running' };
   computeCouplingPairs();
 }
 
@@ -2385,7 +2397,6 @@ const ENERGY_CAP        = 3.5;
 let sustainNorm = 0.5;
 let lastStrikeTime = 0;
 let lastStrikeForce = 0;
-let lastStrikeGx = 69.5, lastStrikeGy = 69.5;
 function DECAY_FACTOR_MULT() { return 0.02 + sustainNorm * 0.78; }
 
 function updateModalBank(velocity, contactR, dt) {
@@ -2409,7 +2420,7 @@ function updateModalBank(velocity, contactR, dt) {
   const flumieTypeOffset = flumieMode ? (1 - malletNorm) * 4 : 0;
   const flumieSpeedPeak = flumieMode ? Math.min(13, velocity * 12 + flumieTypeOffset) : 0;
   const flumieSigma = 2.0 + malletNorm * 1.5;
-  const flumieGrip = flumieMode ? (0.4 + malletNorm * 0.6) : 0;
+  const flumieGrip = flumieMode ? (0.55 + malletNorm * 0.45) : 0;
 
   if (flumieMode) {
     flumieSmoothedV = flumieSmoothedV * 0.93 + velocity * 0.07;
@@ -2456,22 +2467,22 @@ function updateModalBank(velocity, contactR, dt) {
       tau *= freqDamp;
     }
 
-    if (flumieMode && (velocity > 0.01 || rubState.pressure > 0.05)) {
+    if (flumieMode && velocity > 0.02) {
       const dist = (i - flumieSpeedPeak) / flumieSigma;
       const velocityMatch = Math.exp(-0.5 * dist * dist);
-      const activeV = Math.max(velocity, rubState.pressure * 0.15);
+      const activeV = velocity;
       const flumieDirFactor = symmetric
         ? 0.6 + 0.4 * radialComp
         : 0.6 + 0.4 * tangComp;
       const frictionGain = velocityMatch * coupling * flumieDirFactor * rubState.pressure
-                         * flumieGrip * flumieSmoothness * 2.5
+                         * flumieGrip * flumieSmoothness * 3.5
                          * activeV / Math.max(0.1, activeV);
       const saturatedGain = frictionGain / (1 + r.energy * r.energy * 0.45);
       const naturalDecay = 1 / tau;
       const netRate = saturatedGain - naturalDecay;
       const growth = Math.exp(netRate * dt);
       const seed = p.amp * activeV * coupling * velocityMatch * rubState.pressure
-                 * flumieGrip * 0.15 * dt;
+                 * flumieGrip * 0.22 * dt;
       r.energy = r.energy * growth + seed;
     } else {
       const effectiveTau = tau / (1 + r.energy * 0.25);
@@ -2499,24 +2510,24 @@ function updateModalBank(velocity, contactR, dt) {
     if (!flumieMode) {
       const shDrift = (SHAPES[currentShape] || {}).driftMult || 1;
       const hfDrift = 1 - matLerp('highFreqDamping') * (i / (P.length - 1)) * 0.6;
-      const driftRate = 0.00007 * (1 + i * 0.4) * shDrift * hfDrift;
-      const energyKick = 1 + r.energy * 0.5;
+      const driftRate = 0.00015 * (1 + i * 0.4) * shDrift * hfDrift;
+      const energyKick = 1 + r.energy * 0.8;
       r.drift += (Math.random() - 0.5) * driftRate * energyKick * dt * 60;
-      r.drift *= (1 - 0.025 * dt * 60);
-      const maxDrift = r.detune * 0.5;
+      r.drift *= (1 - 0.018 * dt * 60);
+      const maxDrift = r.detune * 0.6;
       r.drift = Math.max(-maxDrift, Math.min(maxDrift, r.drift));
 
-      const sinceStrike = (performance.now() - lastStrikeTime) / 1000;
-      const pitchShift = r.energy > 0.05 && sinceStrike > 0.3
+      const pitchShift = r.energy > 0.05
         ? r.energy * r.energy * 0.003 / (1 + i * 0.2) : 0;
       const bs = SHAPES[currentShape].bendSign || -1;
-      const energyDetune = r.energy * 0.0008 * shDrift / (1 + i * 0.15);
+      const energyDetune = r.energy * 0.0014 * shDrift / (1 + i * 0.15);
+      const bendTau = 0.05 + 0.2 / (1 + r.energy * 2);
       r.osc1.frequency.cancelScheduledValues(now);
       r.osc1.frequency.setTargetAtTime(
-        r.freq * (1 + r.detune + r.drift + energyDetune) * (1 + bs * pitchShift), now, 0.25);
+        r.freq * (1 + r.detune + r.drift + energyDetune) * (1 + bs * pitchShift), now, bendTau);
       r.osc2.frequency.cancelScheduledValues(now);
       r.osc2.frequency.setTargetAtTime(
-        r.freq * (1 - r.detune * 0.7 + r.drift * 0.5) * (1 + bs * pitchShift), now, 0.25);
+        r.freq * (1 - r.detune * 0.7 + r.drift * 0.5) * (1 + bs * pitchShift), now, bendTau);
     }
     if (flumieMode && r.energy > 0.1) {
       const physicsWobble = r.energy * 0.0003 * Math.sin(now * 3.7 + i * 2.1);
@@ -2549,8 +2560,6 @@ function updateModalBank(velocity, contactR, dt) {
 }
 
 const STRIKE_DUCK = 0.35;
-const STRIKE_TRANSIENT = 1.06;
-const STRIKE_TRANSIENT_TAU = 0.12;
 
 function strike(strikeR, strikeTheta, force) {
   initAudio(); resumeAudio();
@@ -2603,32 +2612,24 @@ function strike(strikeR, strikeTheta, force) {
     r.energy = Math.min(ENERGY_CAP, r.energy + deposit);
   });
 
-  const sTransient = flumieMode ? 1.01 : STRIKE_TRANSIENT;
   const sAttack = flumieMode ? 0.015 : 0.012 * Math.max(0.5, sizeLerp('decay'));
-  const sTau = flumieMode ? 0.06 : STRIKE_TRANSIENT_TAU;
   modalBank.resonators.forEach((r) => {
     r.modGain.gain.cancelScheduledValues(now);
-    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE * sTransient, now, sAttack);
-    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE, now + 0.05, sTau);
+    r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE, now, sAttack);
   });
   if (flumieMode) {
     modalBank.resonators.forEach(r => { r.energy *= 0.4; });
   }
 
-  const bendScale = flumieMode ? 0.25 : 1;
   modalBank.resonators.forEach((r, i) => {
-    if (r.energy < 0.05) return;
-    const bendDepth = Math.min(0.018, r.energy * 0.008) / (1 + i * 0.3) * bendScale;
-    if (bendDepth < 0.0005) return;
-    const f1 = r.freq * (1 + r.detune);
-    const f2 = r.freq * (1 - r.detune * 0.7);
+    r.detune = modeSplitDetune(i);
+    r.drift = (Math.random() - 0.5) * r.detune * 0.4;
+    const f1 = r.freq * (1 + r.detune + r.drift);
+    const f2 = r.freq * (1 - r.detune * 0.7 + r.drift * 0.5);
     r.osc1.frequency.cancelScheduledValues(now);
+    r.osc1.frequency.setValueAtTime(f1, now);
     r.osc2.frequency.cancelScheduledValues(now);
-    const bs = shape().bendSign || -1;
-    r.osc1.frequency.setTargetAtTime(f1 * (1 + bs * bendDepth), now, 0.004);
-    r.osc2.frequency.setTargetAtTime(f2 * (1 + bs * bendDepth), now, 0.004);
-    r.osc1.frequency.setTargetAtTime(f1, now + 0.012, 0.10);
-    r.osc2.frequency.setTargetAtTime(f2, now + 0.012, 0.10);
+    r.osc2.frequency.setValueAtTime(f2, now);
   });
 
   const nLen = Math.floor(audioCtx.sampleRate * 0.15);
@@ -2790,33 +2791,18 @@ function computeModalViz() {
   const P = partials();
   const now = performance.now() * 0.001;
   const sinceStrike = (performance.now() - lastStrikeTime) / 1000;
-  const focusT = Math.min(1, sinceStrike / 2.5);
-  const focusRadius = 8 + focusT * gridR;
-  const focusR2 = focusRadius * focusRadius;
-  const hasFocus = focusT < 1;
+  const waveTau = -2.0 / (240 * Math.log(matLerp('waveDamping')));
+  const modalFade = Math.min(1, sinceStrike / waveTau);
+  const fadeScale = modalFade * modalFade;
   for (let i = 0; i < Math.min(P.length, res.length, modeShapes.length); i++) {
     const e = res[i].energy;
     if (e < 0.001) continue;
-    const amp = Math.sqrt(e) * 0.15;
+    const amp = Math.sqrt(e) * 0.15 * fadeScale;
     const vizFreq = 0.3 + i * 0.17;
     const oscil = Math.sin(now * vizFreq * Math.PI * 2) * amp;
     const shape = modeShapes[i];
-    if (!hasFocus) {
-      for (let j = 0; j < GRID * GRID; j++) {
-        modalViz[j] += shape[j] * oscil;
-      }
-    } else {
-      for (let y = 0; y < GRID; y++) {
-        const dy = y - lastStrikeGy;
-        const rowOff = y * GRID;
-        for (let x = 0; x < GRID; x++) {
-          const j = rowOff + x;
-          const dx = x - lastStrikeGx;
-          const d2 = dx * dx + dy * dy;
-          const focus = d2 < focusR2 ? 1 : Math.exp(-(d2 - focusR2) / (focusR2 * 0.3));
-          modalViz[j] += shape[j] * oscil * focus;
-        }
-      }
+    for (let j = 0; j < GRID * GRID; j++) {
+      modalViz[j] += shape[j] * oscil;
     }
   }
 }
@@ -4682,7 +4668,6 @@ function handleStrikeAt(p, contactSize) {
   const strikeTheta = Math.atan2(p.gy - gridCy, p.gx - gridCx);
   strike(p.strikeR, strikeTheta, force);
   recPushEvent({ type: 'strike', r: p.strikeR, theta: strikeTheta, force });
-  lastStrikeGx = p.gx; lastStrikeGy = p.gy;
   const strength = (0.85 + (1 - p.strikeR) * 0.25) * malletEnergy() * force;
   injectStrike(p.gx, p.gy, strength);
   recentStrikes.push({ x: p.px, y: p.py, t: performance.now() });
@@ -4866,7 +4851,7 @@ function loop() {
     const stillDt = (now - rubState.lastMoveT) / 1000;
     if (stillDt > 0.04) rubState.velocity *= 0.88;
     if (!rubState.outside) {
-      const pressureTau = 0.7 + malletNorm * 0.9;
+      const pressureTau = 0.45 + malletNorm * 0.65;
       rubState.pressure += (1 - rubState.pressure) * dt / pressureTau;
     } else {
       rubState.pressure *= Math.exp(-dt / 0.4);
@@ -5369,7 +5354,6 @@ function recDispatchEvent(evt) {
     case 'strike': {
       const p = recPolarToScreen(evt.r, evt.theta);
       strike(evt.r, evt.theta, evt.force);
-      lastStrikeGx = p.gx; lastStrikeGy = p.gy;
       const strength = (0.85 + (1 - evt.r) * 0.25) * malletEnergy() * evt.force;
       injectStrike(p.gx, p.gy, strength);
       recentStrikes.push({ x: p.px, y: p.py, t: performance.now() });
