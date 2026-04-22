@@ -1731,6 +1731,7 @@ const SHAPES = {
     pitchMult: 0.97,
     bendSign: 1,
     cascadeMult: 1.0,
+    splitMult: 0.7,
     partials: [
       { r: 1.00, amp: 1.00, decay: 9.0 },
       { r: 1.58, amp: 1.05, decay: 8.0 },
@@ -1753,6 +1754,7 @@ const SHAPES = {
     pitchMult: 0.90,
     bendSign: -1,
     cascadeMult: 1.2,
+    splitMult: 0.8,
     partials: [
       { r: 1.00, amp: 1.30, decay: 10.0 },
       { r: 1.98, amp: 0.60, decay: 8.0 },
@@ -1775,6 +1777,7 @@ const SHAPES = {
     pitchMult: 1.77,
     bendSign: -1,
     cascadeMult: 1.3,
+    splitMult: 1.0,
     partials: [
       { r: 0.50, amp: 0.45, decay: 14.0 },
       { r: 1.00, amp: 1.20, decay: 11.0 },
@@ -1797,6 +1800,7 @@ const SHAPES = {
     pitchMult: 0.79,
     bendSign: 1,
     cascadeMult: 0.5,
+    splitMult: 0.5,
     partials: [
       { r: 1.00, amp: 1.05, decay: 4.5 },
       { r: 1.82, amp: 0.78, decay: 4.2 },
@@ -1819,6 +1823,7 @@ const SHAPES = {
     pitchMult: 0.77,
     bendSign: -1,
     cascadeMult: 0.7,
+    splitMult: 1.4,
     partials: [
       { r: 1.00,  amp: 1.20,  decay: 45.0 },
       { r: 2.71,  amp: 0.90,  decay: 38.0 },
@@ -2066,6 +2071,13 @@ function malletNoiseFreq()  {
   if (flumieMode) return (1200 - malletNorm * 800) * matLerp('noiseFreqMult');
   return (2400 - malletNorm * 1900) * matLerp('noiseFreqMult');
 }
+const MODE_SPLIT = [0.003, 0.0055, 0.002, 0.006, 0.0025, 0.005, 0.0035, 0.004, 0.007, 0.003, 0.0055, 0.002, 0.0045, 0.003];
+function modeSplitDetune(i) {
+  const sm = (SHAPES[currentShape] || {}).splitMult || 1;
+  const freqScale = Math.sqrt(65 / Math.max(65, gongFundamental()));
+  const base = (MODE_SPLIT[i] || 0.004) * sm * freqScale;
+  return base * (0.75 + Math.random() * 0.5);
+}
 function malletPartialWeight(i, total) {
   const sigma = malletContactRadius();
   const modeN = 1 + i * 0.55;
@@ -2257,8 +2269,7 @@ function buildModalBank() {
   P.forEach((p, i) => {
     const pShift = 1 + matLerp('partialShift') * (i / Math.max(1, P.length - 1));
     const freq = Math.min(18000, fundamental * p.r * pShift);
-    let detune = 0.004 + Math.random() * 0.004;
-    if (currentShape === 'bowl') detune = 0.004 + i * 0.0005 + Math.random() * 0.001;
+    const detune = modeSplitDetune(i);
     const osc1 = ctx.createOscillator();
     osc1.type = 'sine';
     osc1.frequency.value = freq * (1 + detune);
@@ -2286,7 +2297,7 @@ function buildModalBank() {
       osc1, osc2, modGain,
       fmDepth1, fmDepth2,
       idx: i,
-      freq,
+      freq, detune,
       energy: 0,
     });
   });
@@ -2352,11 +2363,11 @@ function retuneModalBank() {
     const p = P[i];
     const pShift = 1 + matLerp('partialShift') * (i / Math.max(1, P.length - 1));
     const freq = Math.min(18000, fundamental * p.r * pShift);
-    let detune = 0.004 + ((i * 13) % 7) * 0.0006;
-    if (currentShape === 'bowl' && shapeMorphT >= 1) detune = 0.004 + i * 0.0005;
+    const detune = modeSplitDetune(i);
     r.osc1.frequency.setTargetAtTime(freq * (1 + detune), now, tau);
     r.osc2.frequency.setTargetAtTime(freq * (1 - detune * 0.7), now, tau);
     r.freq = freq;
+    r.detune = detune;
     r.idx = i;
   });
   computeCouplingPairs();
@@ -2472,7 +2483,8 @@ function updateModalBank(velocity, contactR, dt) {
     r.modGain.gain.setTargetAtTime(amp, now, gainTau);
 
     const wobbleScale = flumieMode ? 0.0018 : 0.0028;
-    const wobble = r.freq * wobbleScale * Math.sqrt(r.energy);
+    const wobbleFloor = r.freq * wobbleScale * 0.15;
+    const wobble = r.freq * wobbleScale * Math.sqrt(r.energy) + wobbleFloor;
     r.fmDepth1.gain.cancelScheduledValues(now);
     r.fmDepth1.gain.setTargetAtTime(wobble, now, 0.08);
     r.fmDepth2.gain.cancelScheduledValues(now);
@@ -2481,13 +2493,12 @@ function updateModalBank(velocity, contactR, dt) {
     if (!flumieMode && r.energy > 0.05) {
       const sinceStrike = (performance.now() - lastStrikeTime) / 1000;
       if (sinceStrike > 0.3) {
-        const pitchShift = r.energy * r.energy * 0.001 / (1 + i * 0.2);
+        const pitchShift = r.energy * r.energy * 0.003 / (1 + i * 0.2);
         const bs = SHAPES[currentShape].bendSign || -1;
-        const detune = 0.004 + ((i * 13) % 7) * 0.0006;
         r.osc1.frequency.cancelScheduledValues(now);
-        r.osc1.frequency.setTargetAtTime(r.freq * (1 + detune) * (1 + bs * pitchShift), now, 0.08);
+        r.osc1.frequency.setTargetAtTime(r.freq * (1 + r.detune) * (1 + bs * pitchShift), now, 0.4);
         r.osc2.frequency.cancelScheduledValues(now);
-        r.osc2.frequency.setTargetAtTime(r.freq * (1 - detune * 0.7) * (1 + bs * pitchShift), now, 0.08);
+        r.osc2.frequency.setTargetAtTime(r.freq * (1 - r.detune * 0.7) * (1 + bs * pitchShift), now, 0.4);
       }
     }
     if (flumieMode && r.energy > 0.1) {
@@ -2495,9 +2506,8 @@ function updateModalBank(velocity, contactR, dt) {
       const angularMod = Math.sin(theta * (1 + i * 0.37)) * 0.0004 * r.energy;
       const tremorMod = (velocity - flumieSmoothedV) * 0.0015 * r.energy;
       const pitchWobble = physicsWobble + angularMod + tremorMod;
-      const detune = 0.004 + ((i * 13) % 7) * 0.0006;
-      const f1 = r.freq * (1 + detune + pitchWobble);
-      const f2 = r.freq * (1 - detune * 0.7 + pitchWobble * 0.6);
+      const f1 = r.freq * (1 + r.detune + pitchWobble);
+      const f2 = r.freq * (1 - r.detune * 0.7 + pitchWobble * 0.6);
       r.osc1.frequency.cancelScheduledValues(now);
       r.osc1.frequency.setTargetAtTime(f1, now, 0.05);
       r.osc2.frequency.cancelScheduledValues(now);
@@ -2593,9 +2603,8 @@ function strike(strikeR, strikeTheta, force) {
     if (r.energy < 0.05) return;
     const bendDepth = Math.min(0.018, r.energy * 0.008) / (1 + i * 0.3) * bendScale;
     if (bendDepth < 0.0005) return;
-    const detune = 0.004 + ((i * 13) % 7) * 0.0006;
-    const f1 = r.freq * (1 + detune);
-    const f2 = r.freq * (1 - detune * 0.7);
+    const f1 = r.freq * (1 + r.detune);
+    const f2 = r.freq * (1 - r.detune * 0.7);
     r.osc1.frequency.cancelScheduledValues(now);
     r.osc2.frequency.cancelScheduledValues(now);
     const bs = shape().bendSign || -1;
@@ -4445,10 +4454,11 @@ document.getElementById('pitch-rack').addEventListener('click', (e) => {
     modalBank.resonators.forEach((r, i) => {
       if (i >= P.length) return;
       const freq = Math.min(18000, fundamental * P[i].r);
-      const detune = 0.004 + ((i * 13) % 7) * 0.0006;
-      r.osc1.frequency.setValueAtTime(freq * (1 + detune), now);
-      r.osc2.frequency.setValueAtTime(freq * (1 - detune * 0.7), now);
+      const d = modeSplitDetune(i);
+      r.osc1.frequency.setValueAtTime(freq * (1 + d), now);
+      r.osc2.frequency.setValueAtTime(freq * (1 - d * 0.7), now);
       r.freq = freq;
+      r.detune = d;
     });
   }
   strike(0.35 + Math.random() * 0.25, Math.random() * Math.PI * 2, 1.0);
@@ -5279,10 +5289,11 @@ function recApplyControl(key, value) {
           modalBank.resonators.forEach((r, i) => {
             if (i >= P.length) return;
             const freq = Math.min(18000, fundamental * P[i].r);
-            const detune = 0.004 + ((i * 13) % 7) * 0.0006;
-            r.osc1.frequency.setValueAtTime(freq * (1 + detune), now);
-            r.osc2.frequency.setValueAtTime(freq * (1 - detune * 0.7), now);
+            const d = modeSplitDetune(i);
+            r.osc1.frequency.setValueAtTime(freq * (1 + d), now);
+            r.osc2.frequency.setValueAtTime(freq * (1 - d * 0.7), now);
             r.freq = freq;
+            r.detune = d;
           });
         }
         strike(0.35 + Math.random() * 0.25, Math.random() * Math.PI * 2, 1.0);
