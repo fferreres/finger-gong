@@ -390,7 +390,7 @@
 
   .tuning-toggle {
     position: relative;
-    height: 22px;
+    height: 32px;
     border: 1px solid var(--bg-panel-border);
     background: var(--control-bg);
     border-radius: 100px;
@@ -409,7 +409,7 @@
     position: relative;
     z-index: 1;
     padding: 0 8px;
-    height: 18px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -432,7 +432,7 @@
     position: absolute;
     top: 2px;
     left: 2px;
-    height: 18px;
+    height: 28px;
     border-radius: 100px;
     background: linear-gradient(135deg, var(--btn-top), var(--btn-bot));
     box-shadow: 0 0 6px var(--btn-glow);
@@ -2307,21 +2307,26 @@ const frozenBanks = [];
 const MAX_FROZEN = 3;
 const FROZEN_DECAY = 5;
 
+function cancelHold(param, t) {
+  if (param.cancelAndHoldAtTime) param.cancelAndHoldAtTime(t);
+  else param.cancelScheduledValues(t);
+}
+
 function freezeModalBank() {
   if (!modalBank || !audioCtx) return;
   const now = audioCtx.currentTime;
   modalBank.resonators.forEach(r => {
     const amp = r.energy * AMP_SCALE;
-    r.modGain.gain.cancelScheduledValues(now);
+    cancelHold(r.modGain.gain, now);
     if (amp > 0.0001) {
       r.modGain.gain.setValueAtTime(amp, now);
       r.modGain.gain.exponentialRampToValueAtTime(0.0001, now + FROZEN_DECAY);
     } else {
       r.modGain.gain.setValueAtTime(0, now);
     }
-    r.fmDepth1.gain.cancelScheduledValues(now);
+    cancelHold(r.fmDepth1.gain, now);
     r.fmDepth1.gain.setTargetAtTime(0, now, 0.5);
-    r.fmDepth2.gain.cancelScheduledValues(now);
+    cancelHold(r.fmDepth2.gain, now);
     r.fmDepth2.gain.setTargetAtTime(0, now, 0.5);
   });
   frozenBanks.push({ bank: modalBank, expires: now + FROZEN_DECAY + 0.5 });
@@ -2333,6 +2338,7 @@ function freezeModalBank() {
 
 function teardownBank(bank) {
   bank.resonators.forEach(r => {
+    r.modGain.gain.value = 0;
     try { r.osc1.stop(); } catch(e) {}
     try { r.osc2.stop(); } catch(e) {}
     r.modGain.disconnect();
@@ -2606,17 +2612,23 @@ function updateModalBank(velocity, contactR, dt) {
     if (r.energy < 1e-6)       r.energy = 0;
 
     const amp = r.energy * AMP_SCALE;
-    const gainTau = flumieMode ? 0.01 : 0.03;
-    r.modGain.gain.cancelScheduledValues(now);
-    r.modGain.gain.setTargetAtTime(amp, now, gainTau);
+    if (Math.abs(amp - (r._lastAmp || 0)) > 0.001) {
+      const gainTau = flumieMode ? 0.01 : 0.03;
+      cancelHold(r.modGain.gain, now);
+      r.modGain.gain.setTargetAtTime(amp, now, gainTau);
+      r._lastAmp = amp;
+    }
 
     const wobbleScale = flumieMode ? 0.0018 : 0.0028;
     const wobbleFloor = r.freq * wobbleScale * 0.15;
     const wobble = r.freq * wobbleScale * Math.sqrt(r.energy) + wobbleFloor;
-    r.fmDepth1.gain.cancelScheduledValues(now);
-    r.fmDepth1.gain.setTargetAtTime(wobble, now, 0.08);
-    r.fmDepth2.gain.cancelScheduledValues(now);
-    r.fmDepth2.gain.setTargetAtTime(wobble * 0.7, now, 0.08);
+    if (Math.abs(wobble - (r._lastWobble || 0)) > 0.05) {
+      cancelHold(r.fmDepth1.gain, now);
+      r.fmDepth1.gain.setTargetAtTime(wobble, now, 0.08);
+      cancelHold(r.fmDepth2.gain, now);
+      r.fmDepth2.gain.setTargetAtTime(wobble * 0.7, now, 0.08);
+      r._lastWobble = wobble;
+    }
 
     if (!flumieMode) {
       const shDrift = (SHAPES[currentShape] || {}).driftMult || 1;
@@ -2745,6 +2757,8 @@ function strike(strikeR, strikeTheta, force) {
   modalBank.resonators.forEach((r) => {
     r.modGain.gain.cancelScheduledValues(now);
     r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE, now, sAttack);
+    r._lastAmp = r.energy * AMP_SCALE;
+    r._lastWobble = -1;
   });
   if (flumieMode) {
     modalBank.resonators.forEach(r => { r.energy *= 0.4; });
@@ -5056,8 +5070,10 @@ function loop() {
         if (r.energy < 1e-6) r.energy = 0;
       });
       modalBank.resonators.forEach(r => {
-        r.modGain.gain.cancelScheduledValues(dampNow);
-        r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE, dampNow, 0.01);
+        const amp = r.energy * AMP_SCALE;
+        cancelHold(r.modGain.gain, dampNow);
+        r.modGain.gain.setTargetAtTime(amp, dampNow, 0.01);
+        r._lastAmp = amp;
       });
       for (let i = 0; i < GRID * GRID; i++) {
         u[i] *= factor; uPrev[i] *= factor;
@@ -5324,7 +5340,7 @@ function recSilenceGong() {
   const now = audioCtx.currentTime;
   modalBank.resonators.forEach(r => {
     r.energy = 0;
-    r.modGain.gain.cancelScheduledValues(now);
+    cancelHold(r.modGain.gain, now);
     r.modGain.gain.setValueAtTime(0, now);
   });
   for (let i = 0; i < GRID * GRID; i++) { u[i] = 0; uPrev[i] = 0; }
