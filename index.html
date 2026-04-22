@@ -2099,7 +2099,7 @@ let volumeNorm = 0.7;
 let spaceNorm = 0;
 let reverbSend = null;
 let reverbWet = null;
-function currentMasterGain() { return volumeNorm * volumeNorm * 0.5 * sizeLerp('vol') * (healingMode ? 0.85 : 1); }
+function currentMasterGain() { return volumeNorm * volumeNorm * 0.5 * sizeLerp('vol') * (healingMode ? 0.55 : 1); }
 
 function initAudio() {
   if (masterGain) return;
@@ -2363,8 +2363,8 @@ function retuneModalBank() {
 }
 
 const RUB_DRIVE_SCALE   = 1.4;
-const STRIKE_SCALE      = 1.7;
-const AMP_SCALE         = 0.4275;
+const STRIKE_SCALE      = 1.3;
+const AMP_SCALE         = 0.25;
 const ENERGY_CAP        = 3.5;
 let sustainNorm = 0.5;
 let lastStrikeTime = 0;
@@ -2530,12 +2530,15 @@ function strike(strikeR, strikeTheta, force) {
   const me = malletEnergy() * (force || 1);
 
   const totalE = modalBank.resonators.reduce((s, r) => s + r.energy, 0);
-  const duckAmt = 1 - STRIKE_DUCK * Math.min(1, totalE / 4);
+  const duckStrength = STRIKE_DUCK + Math.min(0.35, totalE * 0.025);
+  const duckAmt = 1 - duckStrength * Math.min(1, totalE / 3);
   modalBank.resonators.forEach(r => {
     r.energy *= duckAmt;
     r.modGain.gain.cancelScheduledValues(now);
     r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE, now, 0.012);
   });
+  const postDuckE = modalBank.resonators.reduce((s, r) => s + r.energy, 0);
+  const depositScale = 1 / (1 + postDuckE * 0.25);
 
   const strikeJitter = 0.007 * (Math.random() - 0.5);
   const jitteredR = Math.max(0, Math.min(1, strikeR + strikeJitter));
@@ -2557,10 +2560,10 @@ function strike(strikeR, strikeTheta, force) {
     const locWeight = Math.max(0.02, Math.abs(shape));
     const mWeight = malletPartialWeight(i, P.length);
     const forceHarden = 1 + (force || 1) * malletNorm * 0.3 * (i / Math.max(1, P.length - 1));
-    const sympathetic = 1 + r.energy * 0.3;
+    const sympathetic = 1 + Math.min(r.energy, 1.5) * 0.2;
     const vary = 0.94 + Math.random() * 0.12;
     const strikeNerf = flumieMode ? 0.2 : 1;
-    let deposit = p.amp * locWeight * mWeight * forceHarden * sympathetic * me * STRIKE_SCALE * vary * strikeNerf;
+    let deposit = p.amp * locWeight * mWeight * forceHarden * sympathetic * me * STRIKE_SCALE * vary * strikeNerf * depositScale;
     if (currentShape === 'bao' && shapeMorphT >= 1 && strikeR < 0.15) {
       deposit *= (i === 0 || i === 1 || i === 4) ? 1.5 : 0.4;
     }
@@ -2629,14 +2632,14 @@ function coupleModesStep(dt) {
 
   const cascadeMult = shape().cascadeMult || 1;
   const energyNorm = Math.min(1, totalEnergy / (ENERGY_CAP * 2 * cascadeMult));
-  const regimeFactor = 1 + energyNorm * energyNorm * 4;
+  const regimeFactor = 1 + energyNorm * energyNorm * 3;
 
   let bloomMult = 1;
   if (lastStrikeForce > 0.3) {
     const elapsed = (performance.now() - lastStrikeTime) / 1000;
-    if (elapsed < 1.0) {
-      bloomMult = 1 + lastStrikeForce * 3 *
-        (elapsed < 0.5 ? 1 : Math.exp(-(elapsed - 0.5) / 0.25));
+    if (elapsed < 0.8) {
+      bloomMult = 1 + lastStrikeForce * 2 *
+        (elapsed < 0.4 ? 1 : Math.exp(-(elapsed - 0.4) / 0.2));
     }
   }
 
@@ -2650,24 +2653,34 @@ function coupleModesStep(dt) {
     res[i + 1].energy = Math.max(0, res[i + 1].energy + clamped);
   }
 
-  const spawnBase = 0.015 * regimeFactor * bloomMult;
+  const spawnBase = 0.012 * regimeFactor * bloomMult;
   const couplingPairs = modalBank.couplingPairs;
   if (couplingPairs && couplingPairs.length > 0) {
     for (let p = 0; p < couplingPairs.length; p++) {
       const pair = couplingPairs[p];
       const src = res[pair.from];
       if (src.energy < 0.08) continue;
-      const spawn = src.energy * dt * spawnBase * pair.strength * Math.random();
-      res[pair.to].energy = Math.min(ENERGY_CAP, res[pair.to].energy + spawn);
+      const transfer = src.energy * dt * spawnBase * pair.strength * Math.random();
+      const capped = Math.min(transfer, src.energy * 0.005);
+      res[pair.from].energy = Math.max(0, res[pair.from].energy - capped);
+      res[pair.to].energy = Math.min(ENERGY_CAP, res[pair.to].energy + capped);
     }
   } else {
     for (let i = 0; i < Math.min(6, n); i++) {
       if (res[i].energy < 0.08) continue;
       const target = i + 2 + Math.floor(Math.random() * Math.min(5, n - i - 2));
       if (target >= n) continue;
-      const spawn = res[i].energy * dt * spawnBase * Math.random();
-      res[target].energy = Math.min(ENERGY_CAP, res[target].energy + spawn);
+      const transfer = res[i].energy * dt * spawnBase * Math.random();
+      const capped = Math.min(transfer, res[i].energy * 0.005);
+      res[i].energy = Math.max(0, res[i].energy - capped);
+      res[target].energy = Math.min(ENERGY_CAP, res[target].energy + capped);
     }
+  }
+
+  const maxTotalEnergy = ENERGY_CAP * 4;
+  if (totalEnergy > maxTotalEnergy) {
+    const scale = maxTotalEnergy / totalEnergy;
+    for (let i = 0; i < n; i++) res[i].energy *= scale;
   }
 }
 
@@ -4267,9 +4280,10 @@ function applyHealingPreset(idx) {
     scale: sizeLerp('scale'),
     vol: sizeLerp('vol'),
   };
+  const freqVol = Math.min(1.0, 220 / Math.max(100, preset.freq));
   healingTarget = {
     baseFreq: targetBaseFreq,
-    inches: 34, decay: 1.4, scale: 0.88, vol: 1.0,
+    inches: 34, decay: 1.4, scale: 0.88, vol: Math.max(0.3, freqVol),
     label: preset.freq + 'Hz',
   };
   sizeMorphT = 1;
