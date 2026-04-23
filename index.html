@@ -2176,6 +2176,7 @@ function rgbHex(c) {
 // Create AudioContext at page load so resume() only needs to unlock it
 let audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'playback' });
 let masterGain = null;
+let outputGate = null;
 let analyser = null;
 let timeData = null;
 let freqData = null;
@@ -2277,8 +2278,11 @@ function initAudio() {
 
   comp.connect(limiter);
   limiter.connect(dcBlock);
+  outputGate = audioCtx.createGain();
+  outputGate.gain.value = 0;
   dcBlock.connect(analyser);
-  analyser.connect(audioCtx.destination);
+  analyser.connect(outputGate);
+  outputGate.connect(audioCtx.destination);
 }
 function resumeAudio() {
   if (audioCtx.state === 'suspended') {
@@ -2287,6 +2291,9 @@ function resumeAudio() {
 }
 function unlockAudio() {
   initAudio();
+  if (outputGate && outputGate.gain.value === 0) {
+    outputGate.gain.setValueAtTime(1, audioCtx.currentTime);
+  }
   if (audioCtx.state !== 'running') {
     audioCtx.resume();
     const buf = audioCtx.createBuffer(1, 1, audioCtx.sampleRate);
@@ -5069,6 +5076,15 @@ function loop() {
     const cr = active ? rubState.strikeR : 0;
     updateModalBank(v, cr, dt);
     coupleModesStep(dt);
+
+    if (outputGate) {
+      const hasEnergy = modalBank.resonators.some(r => r.energy > 1e-5);
+      const gateTarget = hasEnergy ? 1 : 0;
+      if (outputGate._target !== gateTarget) {
+        outputGate.gain.setTargetAtTime(gateTarget, audioCtx.currentTime, hasEnergy ? 0.005 : 0.15);
+        outputGate._target = gateTarget;
+      }
+    }
 
     if (dampenActive) {
       const held = (performance.now() - dampenStart) / 1000;
