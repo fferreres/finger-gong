@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finger Gong — Real-Time Gong Synthesizer for iOS</title>
+<meta name="description" content="A gong synthesizer that responds to your touch. Strike, rub, and feel the resonance build. Pure real-time synthesis on your iPhone or iPad.">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Georgia', serif; background: #0d0a07; color: #e8dcc2; line-height: 1.75; }
+  a { color: #e9b870; }
+
+  .hero {
+    min-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 24px;
+    background: radial-gradient(ellipse at center, rgba(168, 106, 42, 0.08) 0%, transparent 70%);
+  }
+  .hero h1 {
+    font-size: 2.8rem;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.4em;
+    color: #f4d08a;
+  }
+  .hero .tagline {
+    font-size: 1.2rem;
+    color: #a89070;
+    max-width: 480px;
+    margin-bottom: 2.5em;
+  }
+  .hero .cta {
+    display: inline-block;
+    padding: 14px 36px;
+    background: linear-gradient(to bottom, rgba(138, 82, 32, 0.7), rgba(74, 46, 20, 0.7));
+    color: #f4d08a;
+    text-decoration: none;
+    border-radius: 12px;
+    font-size: 1.05rem;
+    letter-spacing: 0.03em;
+    border: 1px solid rgba(244, 208, 138, 0.15);
+  }
+  .cta:hover { border-color: rgba(244, 208, 138, 0.35); }
+
+  section {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 60px 24px;
+  }
+  section h2 {
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: #f4d08a;
+    margin-bottom: 0.8em;
+  }
+  section p {
+    color: #c4b8a0;
+    margin-bottom: 1.4em;
+    font-size: 1.05rem;
+  }
+  .features {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px 40px;
+    margin-top: 40px;
+  }
+  .feature h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e9b870;
+    margin-bottom: 0.3em;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  .feature p {
+    font-size: 0.95rem;
+    color: #a89070;
+    margin-bottom: 0;
+  }
+  .divider {
+    width: 40px;
+    height: 1px;
+    background: rgba(168, 106, 42, 0.4);
+    margin: 0 auto;
+  }
+  .closing {
+    text-align: center;
+    padding-bottom: 80px;
+  }
+  .closing p { color: #8a7a5e; }
+  .footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 0.85rem;
+    color: #5a4d3a;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  .footer a { color: #8a7a5e; }
+
+  @media (max-width: 520px) {
+    .hero h1 { font-size: 2rem; }
+    .features { grid-template-columns: 1fr; gap: 28px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Finger Gong</h1>
+  <p class="tagline">A gong synthesizer that responds to your touch. Strike it, rub it with a friction mallet, and feel the resonance build beneath your fingers.</p>
+  <a class="cta" href="https://apps.apple.com/app/finger-gong/id6763172779">Download on the App Store</a>
+</div>
+
+<section>
+  <h2>Every sound, built in real time</h2>
+  <p>Finger Gong creates its sound the way a real gong does — through the interaction of vibrating modes. Fourteen oscillators shape each voice, detuned and coupled so harmonics bloom, beat, and slowly fade. The result is a living, breathing instrument that never plays the same way twice.</p>
+  <p>Tap for a clean strike. Hold and drag for a friction mallet rub — the gong begins to sing, harmonics building and shifting as you move. Speed, direction, and pressure all shape the voice.</p>
+</section>
+
+<div class="divider"></div>
+
+<section>
+  <h2>See the sound</h2>
+  <p>The gong's energy is visible. A 2D wave simulation ripples across the surface in real time, responding to every strike and rub. Switch to Chladni mode and watch ten thousand sand particles settle into the nodal patterns of the vibrating disc — the same physics Ernst Chladni revealed two centuries ago, alive on your screen.</p>
+</section>
+
+<div class="divider"></div>
+
+<section>
+  <h2>Bliss mode</h2>
+  <p>Curated sound environments for meditation, relaxation, and healing. Each preset tunes the gong to a specific shape, alloy, pitch, and sustain — voiced for calm. Step through the presets or stay with one that resonates. Pair with the friction mallet for slow, immersive sessions.</p>
+</section>
+
+<div class="divider"></div>
+
+<section>
+  <div class="features">
+    <div class="feature">
+      <h3>5 Gong Shapes</h3>
+      <p>Chau, Bao, Bell, Wind, and Bowl — each with its own harmonic character.</p>
+    </div>
+    <div class="feature">
+      <h3>5 Alloys</h3>
+      <p>Bronze, Brass, Nickel Silver, Blisserite, and Thankium — shifting decay, brightness, and warmth.</p>
+    </div>
+    <div class="feature">
+      <h3>6 Pitches</h3>
+      <p>A pentatonic scale (C D E G A C') for melodic exploration.</p>
+    </div>
+    <div class="feature">
+      <h3>4 Sizes</h3>
+      <p>From a 14-inch hand gong to a 50-inch concert gong.</p>
+    </div>
+    <div class="feature">
+      <h3>Recording</h3>
+      <p>Capture your performances and play them back in a loop.</p>
+    </div>
+    <div class="feature">
+      <h3>Three Skins</h3>
+      <p>Hearth, Paper, and Nocturne — each sets a different mood.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section class="closing">
+  <h2>Immersion mode</h2>
+  <p>Long-press Zen to hide everything. Just you, the gong, and darkness. The instrument fills the screen — touch anywhere to play.</p>
+</section>
+
+<div class="footer">
+  <p>© 2026 Federico Ferreres · <a href="privacy.html">Privacy</a> · <a href="support.html">Support</a></p>
+</div>
+
+</body>
+</html>
