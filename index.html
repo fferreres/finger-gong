@@ -1645,11 +1645,12 @@
             <button class="tuning-toggle-option active" data-mmode="mallet">Mallet</button>
             <button class="tuning-toggle-option" data-mmode="flumie">Flumie</button>
           </div>
-          <button class="mallet-pick" data-size="0" data-mallet="0" title="Wooden Stick"><span class="mp-label">Wood</span></button>
-          <button class="mallet-pick" data-size="1" data-mallet="1" title="Light Felt"><span class="mp-label">Light</span></button>
-          <button class="mallet-pick active" data-size="2" data-mallet="2" title="Medium Felt"><span class="mp-label">Med</span></button>
-          <button class="mallet-pick" data-size="3" data-mallet="3" title="Heavy Felt"><span class="mp-label">Heavy</span></button>
-          <button class="mallet-pick" data-size="4" data-mallet="4" title="Soft Beater"><span class="mp-label">Soft</span></button>
+          <button class="mallet-pick" data-size="0" data-mallet="0" title="Tap Stick"><span class="mp-label">Tap</span></button>
+          <button class="mallet-pick" data-size="1" data-mallet="1" title="Wooden Stick"><span class="mp-label">Wood</span></button>
+          <button class="mallet-pick" data-size="2" data-mallet="2" title="Light Felt"><span class="mp-label">Light</span></button>
+          <button class="mallet-pick active" data-size="3" data-mallet="3" title="Medium Felt"><span class="mp-label">Med</span></button>
+          <button class="mallet-pick" data-size="4" data-mallet="4" title="Heavy Felt"><span class="mp-label">Heavy</span></button>
+          <button class="mallet-pick" data-size="5" data-mallet="5" title="Soft Beater"><span class="mp-label">Soft</span></button>
           <button class="mallet-info-btn" id="mallet-info-btn" title="About mallets &amp; flumies">?</button>
         </div>
       </div>
@@ -2129,8 +2130,8 @@ function matLerp(key) {
 function gongDecayMult()    { return matLerp('decayMult') * sizeLerp('decay'); }
 
 function malletContactRadius() {
-  if (flumieMode) return 0.06 + malletNorm * 0.09;
-  return 0.015 + malletNorm * 0.115;
+  if (flumieMode) return 0.04 + malletNorm * 0.12;
+  return 0.008 + malletNorm * 0.122;
 }
 function malletSigma()      { return malletContactRadius() * gridR; }
 function malletNoiseMult()  {
@@ -2138,8 +2139,8 @@ function malletNoiseMult()  {
   return base * matLerp('noiseAmpMult');
 }
 function malletNoiseFreq()  {
-  if (flumieMode) return (1200 - malletNorm * 800) * matLerp('noiseFreqMult');
-  return (2400 - malletNorm * 1900) * matLerp('noiseFreqMult');
+  if (flumieMode) return (1500 - malletNorm * 1100) * matLerp('noiseFreqMult');
+  return (2800 - malletNorm * 2200) * matLerp('noiseFreqMult');
 }
 const MODE_SPLIT = [0.003, 0.0055, 0.002, 0.006, 0.0025, 0.005, 0.0035, 0.004, 0.007, 0.003, 0.0055, 0.002, 0.0045, 0.003];
 function modeSplitDetune(i) {
@@ -2534,10 +2535,10 @@ function updateModalBank(velocity, contactR, dt) {
 
   const theta = Math.atan2(rubState.gy - gridCy, rubState.gx - gridCx);
 
-  const flumieTypeOffset = flumieMode ? (1 - malletNorm) * 4 : 0;
+  const flumieTypeOffset = flumieMode ? (1 - malletNorm) * 3 : 0;
   const flumieSpeedPeak = flumieMode ? Math.min(13, velocity * 12 + flumieTypeOffset) : 0;
-  const flumieSigma = 2.0 + malletNorm * 1.5;
-  const flumieGrip = flumieMode ? (0.55 + malletNorm * 0.45) : 0;
+  const flumieSigma = 1.8 + malletNorm * 1.7;
+  const flumieGrip = flumieMode ? (0.52 + malletNorm * 0.48) : 0;
 
   if (flumieMode) {
     flumieSmoothedV = flumieSmoothedV * 0.93 + velocity * 0.07;
@@ -2591,14 +2592,15 @@ function updateModalBank(velocity, contactR, dt) {
       const flumieDirFactor = symmetric
         ? 0.6 + 0.4 * radialComp
         : 0.6 + 0.4 * tangComp;
-      const frictionGain = velocityMatch * coupling * flumieDirFactor * rubState.pressure
+      const effPressure = rubState.pressure / (0.5 + malletNorm * 0.5);
+      const frictionGain = velocityMatch * coupling * flumieDirFactor * effPressure
                          * flumieGrip * flumieSmoothness * 3.5
                          * activeV / Math.max(0.1, activeV);
       const saturatedGain = frictionGain / (1 + r.energy * r.energy * 0.45);
       const naturalDecay = 1 / tau;
       const netRate = saturatedGain - naturalDecay;
       const growth = Math.exp(netRate * dt);
-      const seed = p.amp * activeV * coupling * velocityMatch * rubState.pressure
+      const seed = p.amp * activeV * coupling * velocityMatch * effPressure
                  * flumieGrip * 0.22 * dt;
       r.energy = r.energy * growth + seed;
     } else {
@@ -4257,17 +4259,21 @@ function drawRadial() {
 const gongSlider = document.getElementById('gong-slider');
 const gongValue = document.getElementById('gong-value');
 
-const MALLET_LABELS = ['Wooden Stick', 'Light Felt', 'Medium Felt', 'Heavy Felt', 'Soft Beater'];
-const FLUMIE_LABELS = ['Small Rubber', 'Medium Rubber', 'Large Rubber', 'Suede Pad', 'Sheepskin'];
+const MALLET_LABELS = ['Tap Stick', 'Wooden Stick', 'Light Felt', 'Medium Felt', 'Heavy Felt', 'Soft Beater'];
+const FLUMIE_LABELS = ['Micro Rubber', 'Small Rubber', 'Medium Rubber', 'Large Rubber', 'Suede Pad', 'Sheepskin'];
 function updateGongDisplay() {
   const s = gongSize_();
   const inches = Math.round(s.inches);
   gongValue.innerHTML = `${s.label}<span class="unit">${inches}in</span>`;
 }
-const MALLET_SHORT = ['Wood', 'Light', 'Med', 'Heavy', 'Soft'];
-const FLUMIE_SHORT = ['Sm', 'Med', 'Lg', 'Suede', 'Skin'];
+const MALLET_SHORT = ['Tap', 'Wood', 'Light', 'Med', 'Heavy', 'Soft'];
+const FLUMIE_SHORT = ['XS', 'Sm', 'Med', 'Lg', 'Suede', 'Skin'];
 function updateMalletDisplay() {
-  const idx = Math.min(4, Math.floor(malletNorm * 5));
+  let idx = 0, best = Infinity;
+  for (let i = 0; i < MALLET_NORMS.length; i++) {
+    const d = Math.abs(malletNorm - MALLET_NORMS[i]);
+    if (d < best) { best = d; idx = i; }
+  }
   const labels = flumieMode ? FLUMIE_LABELS : MALLET_LABELS;
   const short = flumieMode ? FLUMIE_SHORT : MALLET_SHORT;
   document.querySelectorAll('.mallet-pick').forEach((btn, i) => {
@@ -4316,7 +4322,7 @@ gongSlider.addEventListener('input', (e) => {
     masterGain.gain.setTargetAtTime(currentMasterGain(), audioCtx.currentTime, 0.05);
   }
 });
-const MALLET_NORMS = [0.08, 0.28, 0.5, 0.72, 0.92];
+const MALLET_NORMS = [0.02, 0.10, 0.30, 0.50, 0.72, 0.92];
 document.getElementById('mallet-rack').addEventListener('click', (e) => {
   const btn = e.target.closest('.mallet-pick');
   if (!btn) return;
@@ -4566,7 +4572,7 @@ function updatePitchRackLabels() {
 function updateBlissHints() {
   document.querySelectorAll('.mallet-pick').forEach(btn => {
     const m = parseInt(btn.dataset.mallet);
-    if (m === 3 || m === 4) {
+    if (m === 4 || m === 5) {
       btn.classList.toggle('bliss-hint', healingMode);
     }
   });
