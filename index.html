@@ -161,10 +161,11 @@
     right: 22px;
     z-index: 100;
     display: flex;
-    gap: 12px;
+    align-items: center;
+    gap: 10px;
     background: var(--control-bg);
     border: 1px solid var(--bg-panel-border);
-    padding: 6px 8px;
+    padding: 6px 10px;
     border-radius: 100px;
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
@@ -172,8 +173,8 @@
   }
 
   .skin-btn {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     border: 1px solid rgba(0,0,0,0.25);
     cursor: pointer;
@@ -561,6 +562,95 @@
   }
   #rec-play { position: relative; }
   #rec-play { font-size: 16px; padding-left: 2px; }
+  #rec-save-btn { font-size: 18px; }
+  #rec-library-btn { font-size: 15px; letter-spacing: 1px; }
+
+  .rec-library {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  .rec-library.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .rec-library-inner {
+    width: 90%;
+    max-width: 340px;
+    max-height: 70vh;
+    padding: 24px 20px;
+    background: var(--bg-panel);
+    border: 1px solid var(--bg-panel-border);
+    border-radius: 14px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .rec-library-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 18px;
+    color: var(--gold);
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .rec-library-empty {
+    text-align: center;
+    color: var(--text-dim);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 15px;
+    font-style: italic;
+    padding: 20px 0;
+  }
+  .rec-library-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    margin-top: 6px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .rec-library-item:hover { background: rgba(255,255,255,0.07); }
+  .rec-library-item-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .rec-library-item-name {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 15px;
+    color: var(--gold);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .rec-library-item-meta {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .rec-library-item-del {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 6px;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+  }
+  .rec-library-item-del:hover { opacity: 1; color: #e07070; }
 
   .sand-spark {
     position: absolute;
@@ -918,6 +1008,61 @@
     margin-top: 14px;
   }
   .support-btn.restore-btn:hover { color: var(--text); }
+
+  .heart-btn {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.25);
+    background: radial-gradient(circle at 30% 30%, #c47070 0%, #5a2020 65%, #1a0808 100%);
+    color: rgba(255,220,220,0.85);
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .heart-btn:hover { transform: scale(1.12); }
+  .heart-btn:focus { outline: none; }
+
+  .support-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  .support-sheet.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .support-sheet-inner {
+    width: 90%;
+    max-width: 320px;
+    padding: 28px 24px;
+    background: var(--bg-panel);
+    border: 1px solid var(--bg-panel-border);
+    border-radius: 14px;
+    text-align: center;
+  }
+  .support-sheet-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 18px;
+    color: var(--gold);
+    margin-bottom: 16px;
+  }
+  .support-sheet .support-btn { text-align: left; }
+  .support-sheet .support-btn.restore-btn { text-align: center; }
 
   .controls {
     width: 100%;
@@ -1427,14 +1572,14 @@
   }
 
   .info-btn {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
-    border: 1px solid var(--bg-panel-border);
-    background: var(--control-bg);
-    color: var(--text-dim);
+    border: 1px solid rgba(0,0,0,0.25);
+    background: radial-gradient(circle at 30% 30%, #a89070 0%, #3a2a18 65%, #0d0a07 100%);
+    color: rgba(232,220,194,0.85);
     font-family: 'Cormorant Garamond', serif;
-    font-size: 12px;
+    font-size: 15px;
     font-style: italic;
     cursor: pointer;
     display: flex;
@@ -1442,9 +1587,9 @@
     justify-content: center;
     padding: 0;
     line-height: 1;
-    transition: color 0.3s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
-  .info-btn:hover { color: var(--text); }
+  .info-btn:hover { transform: scale(1.12); }
   .info-btn:focus { outline: none; }
 
   .info-panel {
@@ -1471,24 +1616,8 @@
     color: var(--bronze-light, #c8a050);
   }
   .info-close {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 10001;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: 1px solid rgba(200, 160, 80, 0.2);
-    background: rgba(0, 0, 0, 0.5);
-    color: rgba(200, 160, 80, 0.6);
-    font-size: 16px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: color 0.2s, border-color 0.2s;
+    display: none;
   }
-  .info-close:hover { color: rgba(200, 160, 80, 0.9); border-color: rgba(200, 160, 80, 0.5); }
   .info-heading {
     font-family: 'Cormorant Garamond', serif;
     font-size: 28px;
@@ -1586,7 +1715,38 @@
   </div>
 </div>
 
+<div class="support-sheet" id="support-sheet">
+  <div class="support-sheet-inner">
+    <div class="support-sheet-title">Support this instrument</div>
+    <button class="support-btn" id="sheet-buy-thankium" onclick="purchaseFromStore('thankium')">
+      <span class="support-label">✦ Unlock Thankium</span>
+      <span class="support-desc">A rare alloy that resonates with gratitude.</span>
+    </button>
+    <button class="support-btn" onclick="purchaseFromStore('tip.small')">
+      <span class="support-label">Finger Cymbal</span>
+      <span class="support-desc">A bright little ting — $2.99</span>
+    </button>
+    <button class="support-btn" onclick="purchaseFromStore('tip.medium')">
+      <span class="support-label">Singing Bowl</span>
+      <span class="support-desc">A warm, sustained hum — $6.99</span>
+    </button>
+    <button class="support-btn" onclick="purchaseFromStore('tip.large')">
+      <span class="support-label">Temple Gong</span>
+      <span class="support-desc">A mighty resonance — $14.99</span>
+    </button>
+    <button class="support-btn restore-btn" onclick="purchaseFromStore('restore')">Restore purchases</button>
+  </div>
+</div>
+
+<div class="rec-library" id="rec-library">
+  <div class="rec-library-inner">
+    <div class="rec-library-title">Saved Recordings</div>
+    <div id="rec-library-list"></div>
+  </div>
+</div>
+
 <div class="skin-toggle" role="tablist" aria-label="Skin">
+  <button class="heart-btn" id="support-toggle" title="Support" aria-label="Support this instrument">♥</button>
   <button class="info-btn" id="info-toggle" title="About" aria-label="About this instrument">i</button>
   <button class="skin-btn active" data-skin="hearth"   title="Hearth"   aria-label="Hearth skin"></button>
   <button class="skin-btn"        data-skin="paper"    title="Paper"    aria-label="Paper skin"></button>
@@ -1637,6 +1797,8 @@
             <button class="rec-btn" id="rec-record" title="Record" aria-label="Record"></button>
             <button class="rec-btn" id="rec-play" title="Play (double-tap to loop)" aria-label="Play" disabled>&#9654;</button>
             <button class="rec-btn" id="rec-clear" title="Clear" aria-label="Clear recording" disabled>↺</button>
+            <button class="rec-btn" id="rec-save-btn" title="Save recording" aria-label="Save recording" disabled>↓</button>
+            <button class="rec-btn" id="rec-library-btn" title="Library" aria-label="Recording library">☰</button>
           </div>
         </div>
         <div class="mallet-rack" id="mallet-rack">
@@ -1645,12 +1807,11 @@
             <button class="tuning-toggle-option active" data-mmode="mallet">Mallet</button>
             <button class="tuning-toggle-option" data-mmode="flumie">Flumie</button>
           </div>
-          <button class="mallet-pick" data-size="0" data-mallet="0" title="Tap Stick"><span class="mp-label">Tap</span></button>
-          <button class="mallet-pick" data-size="1" data-mallet="1" title="Wooden Stick"><span class="mp-label">Wood</span></button>
-          <button class="mallet-pick" data-size="2" data-mallet="2" title="Light Felt"><span class="mp-label">Light</span></button>
-          <button class="mallet-pick active" data-size="3" data-mallet="3" title="Medium Felt"><span class="mp-label">Med</span></button>
-          <button class="mallet-pick" data-size="4" data-mallet="4" title="Heavy Felt"><span class="mp-label">Heavy</span></button>
-          <button class="mallet-pick" data-size="5" data-mallet="5" title="Soft Beater"><span class="mp-label">Soft</span></button>
+          <button class="mallet-pick" data-mallet="0" title="Tap Stick"><span class="mp-label">Tap</span></button>
+          <button class="mallet-pick" data-mallet="1" title="Wooden Mallet"><span class="mp-label">Wood</span></button>
+          <button class="mallet-pick active" data-mallet="2" title="Rubber Mallet"><span class="mp-label">Rubber</span></button>
+          <button class="mallet-pick" data-mallet="3" title="Felt Mallet"><span class="mp-label">Felt</span></button>
+          <button class="mallet-pick" data-mallet="4" title="Soft Beater"><span class="mp-label">Soft</span></button>
           <button class="mallet-info-btn" id="mallet-info-btn" title="About mallets &amp; flumies">?</button>
         </div>
       </div>
@@ -1970,6 +2131,15 @@ let cachedSkin = localStorage.getItem('skin') || 'hearth';
 let gongSizeIdx = 2;
 let pitchRatio = 2;
 let malletNorm = 0.5;
+let malletIdx = 2;
+const MALLETS = [
+  { norm: 0.02, contactR: 0.003, fContactR: 0.012, noiseFreq: 3600, fNoiseFreq: 1900, noiseQ: 2.2, noiseDur: 0.022, noiseMult: 2.0, fNoiseMult: 0.55, attack: 0.003, energy: 0.72, grip: 0.97, sigma: 1.3, typeOff: 5.0, hardenMult: 0.05 },
+  { norm: 0.20, contactR: 0.015, fContactR: 0.035, noiseFreq: 2200, fNoiseFreq: 1300, noiseQ: 1.3, noiseDur: 0.045, noiseMult: 1.4, fNoiseMult: 0.40, attack: 0.006, energy: 0.85, grip: 0.82, sigma: 1.9, typeOff: 3.0, hardenMult: 0.20 },
+  { norm: 0.45, contactR: 0.040, fContactR: 0.065, noiseFreq: 1200, fNoiseFreq: 900,  noiseQ: 0.8, noiseDur: 0.065, noiseMult: 0.9, fNoiseMult: 0.28, attack: 0.010, energy: 1.00, grip: 0.70, sigma: 2.5, typeOff: 1.5, hardenMult: 0.30 },
+  { norm: 0.70, contactR: 0.075, fContactR: 0.105, noiseFreq: 700,  fNoiseFreq: 600,  noiseQ: 0.5, noiseDur: 0.090, noiseMult: 0.5, fNoiseMult: 0.18, attack: 0.014, energy: 1.15, grip: 0.88, sigma: 3.1, typeOff: 0.6, hardenMult: 0.15 },
+  { norm: 0.92, contactR: 0.125, fContactR: 0.150, noiseFreq: 450,  fNoiseFreq: 400,  noiseQ: 0.3, noiseDur: 0.115, noiseMult: 0.25,fNoiseMult: 0.10, attack: 0.019, energy: 1.25, grip: 0.82, sigma: 3.5, typeOff: 0.2, hardenMult: 0.05 },
+];
+function mallet() { return MALLETS[malletIdx]; }
 let flumieMode = false;
 let interactionMode = 'strike';
 let currentShape = 'chau';
@@ -2130,17 +2300,17 @@ function matLerp(key) {
 function gongDecayMult()    { return matLerp('decayMult') * sizeLerp('decay'); }
 
 function malletContactRadius() {
-  if (flumieMode) return 0.04 + malletNorm * 0.12;
-  return 0.008 + malletNorm * 0.122;
+  const m = mallet();
+  return flumieMode ? m.fContactR : m.contactR;
 }
 function malletSigma()      { return malletContactRadius() * gridR; }
 function malletNoiseMult()  {
-  const base = flumieMode ? (0.08 + (1 - malletNorm) * 0.4) : (0.25 + (1 - malletNorm) * 1.5);
-  return base * matLerp('noiseAmpMult');
+  const m = mallet();
+  return (flumieMode ? m.fNoiseMult : m.noiseMult) * matLerp('noiseAmpMult');
 }
 function malletNoiseFreq()  {
-  if (flumieMode) return (1500 - malletNorm * 1100) * matLerp('noiseFreqMult');
-  return (2800 - malletNorm * 2200) * matLerp('noiseFreqMult');
+  const m = mallet();
+  return (flumieMode ? m.fNoiseFreq : m.noiseFreq) * matLerp('noiseFreqMult');
 }
 const MODE_SPLIT = [0.003, 0.0055, 0.002, 0.006, 0.0025, 0.005, 0.0035, 0.004, 0.007, 0.003, 0.0055, 0.002, 0.0045, 0.003];
 function modeSplitDetune(i) {
@@ -2157,7 +2327,7 @@ function malletPartialWeight(i, total) {
   const k = modeN * Math.PI;
   return Math.max(0.02, Math.exp(-k * k * sigma * sigma * 0.5));
 }
-function malletEnergy()     { return 0.7 + malletNorm * 0.55; }
+function malletEnergy()     { return mallet().energy; }
 
 function rgb(c)       { return `rgb(${c[0]},${c[1]},${c[2]})`; }
 function rgba(c, a)   { return `rgba(${c[0]},${c[1]},${c[2]},${a})`; }
@@ -2548,10 +2718,11 @@ function updateModalBank(velocity, contactR, dt) {
 
   const theta = Math.atan2(rubState.gy - gridCy, rubState.gx - gridCx);
 
-  const flumieTypeOffset = flumieMode ? (1 - malletNorm) * 3 : 0;
+  const m = mallet();
+  const flumieTypeOffset = flumieMode ? m.typeOff : 0;
   const flumieSpeedPeak = flumieMode ? Math.min(13, velocity * 12 + flumieTypeOffset) : 0;
-  const flumieSigma = 1.8 + malletNorm * 1.7;
-  const flumieGrip = flumieMode ? (0.52 + malletNorm * 0.48) : 0;
+  const flumieSigma = m.sigma;
+  const flumieGrip = flumieMode ? m.grip : 0;
 
   if (flumieMode) {
     flumieSmoothedV = flumieSmoothedV * 0.93 + velocity * 0.07;
@@ -2713,6 +2884,10 @@ function applyPendingPreset() {
     appliedPitchIdx = currentPitchIdx;
     appliedScalePage = currentScalePage;
     pitchRatio = PITCH_RATIOS[currentPitchIdx];
+    // Gentle ramp to new-mode gain so frozen bank crossfades naturally
+    if (masterGain && audioCtx) {
+      masterGain.gain.setTargetAtTime(currentMasterGain(), audioCtx.currentTime, 1.5);
+    }
   }
 }
 
@@ -2756,7 +2931,7 @@ function strike(strikeR, strikeTheta, force) {
     }
     const locWeight = Math.max(0.02, Math.abs(shape));
     const mWeight = malletPartialWeight(i, P.length);
-    const forceHarden = 1 + (force || 1) * malletNorm * 0.3 * (i / Math.max(1, P.length - 1));
+    const forceHarden = 1 + (force || 1) * mallet().hardenMult * (i / Math.max(1, P.length - 1));
     const sympathetic = 1 + Math.min(r.energy, 1.5) * 0.2;
     const vary = 0.94 + Math.random() * 0.12;
     const strikeNerf = flumieMode ? 0.2 : 1;
@@ -2768,7 +2943,7 @@ function strike(strikeR, strikeTheta, force) {
     r.energy = Math.min(ENERGY_CAP, r.energy + deposit);
   });
 
-  const sAttack = flumieMode ? 0.015 : healingMode ? 0.025 : 0.012 * Math.max(0.5, sizeLerp('decay'));
+  const sAttack = flumieMode ? 0.015 : healingMode ? 0.025 : mallet().attack * Math.max(0.5, sizeLerp('decay'));
   modalBank.resonators.forEach((r) => {
     r.modGain.gain.cancelScheduledValues(now);
     r.modGain.gain.setTargetAtTime(r.energy * AMP_SCALE, now, sAttack);
@@ -2800,14 +2975,14 @@ function strike(strikeR, strikeTheta, force) {
   nf.type = 'bandpass';
   const noiseFreqBase = flumieMode ? malletNoiseFreq() * 0.5 : malletNoiseFreq();
   nf.frequency.value = noiseFreqBase + strikeR * (flumieMode ? 400 : 600);
-  nf.Q.value = matLerp('noiseQ');
+  nf.Q.value = matLerp('noiseQ') * mallet().noiseQ;
   const ng = audioCtx.createGain();
   const strikeTotalE = modalBank.resonators.reduce((s, r) => s + r.energy, 0);
   const noiseScale = 1 / (1 + strikeTotalE * 0.3);
   const noiseModeScale = flumieMode ? 2.5 : healingMode ? 0.12 : 0.35;
   const noiseAmp = (0.06 + strikeR * 0.18) * malletNoiseMult() * noiseScale * noiseModeScale;
   ng.gain.setValueAtTime(noiseAmp, now);
-  const noiseDur = flumieMode ? 0.12 : 0.08;
+  const noiseDur = flumieMode ? 0.12 : mallet().noiseDur;
   ng.gain.exponentialRampToValueAtTime(0.0001, now + noiseDur);
   noise.connect(nf); nf.connect(ng); ng.connect(masterGain);
   noise.start(now); noise.stop(now + 0.3);
@@ -4272,28 +4447,23 @@ function drawRadial() {
 const gongSlider = document.getElementById('gong-slider');
 const gongValue = document.getElementById('gong-value');
 
-const MALLET_LABELS = ['Tap Stick', 'Wooden Stick', 'Light Felt', 'Medium Felt', 'Heavy Felt', 'Soft Beater'];
-const FLUMIE_LABELS = ['Micro Rubber', 'Small Rubber', 'Medium Rubber', 'Large Rubber', 'Suede Pad', 'Sheepskin'];
+const MALLET_LABELS = ['Tap Stick', 'Wooden Mallet', 'Rubber Mallet', 'Felt Mallet', 'Soft Beater'];
+const FLUMIE_LABELS = ['Micro Tip', 'Small Rubber', 'Medium Rubber', 'Large Ball', 'Broad Pad'];
 function updateGongDisplay() {
   const s = gongSize_();
   const inches = Math.round(s.inches);
   gongValue.innerHTML = `${s.label}<span class="unit">${inches}in</span>`;
 }
-const MALLET_SHORT = ['Tap', 'Wood', 'Light', 'Med', 'Heavy', 'Soft'];
-const FLUMIE_SHORT = ['XS', 'Sm', 'Med', 'Lg', 'Suede', 'Skin'];
+const MALLET_SHORT = ['Tap', 'Wood', 'Rubber', 'Felt', 'Soft'];
+const FLUMIE_SHORT = ['Micro', 'Sm', 'Med', 'Lg', 'Pad'];
 function updateMalletDisplay() {
-  let idx = 0, best = Infinity;
-  for (let i = 0; i < MALLET_NORMS.length; i++) {
-    const d = Math.abs(malletNorm - MALLET_NORMS[i]);
-    if (d < best) { best = d; idx = i; }
-  }
   const labels = flumieMode ? FLUMIE_LABELS : MALLET_LABELS;
   const short = flumieMode ? FLUMIE_SHORT : MALLET_SHORT;
   document.querySelectorAll('.mallet-pick').forEach((btn, i) => {
-    btn.classList.toggle('active', i === idx);
-    btn.title = labels[i];
+    btn.classList.toggle('active', i === malletIdx);
+    btn.title = labels[i] || '';
     const lbl = btn.querySelector('.mp-label');
-    if (lbl) lbl.textContent = short[i];
+    if (lbl) lbl.textContent = short[i] || '';
   });
 }
 function updateMalletToggle() {
@@ -4335,14 +4505,15 @@ gongSlider.addEventListener('input', (e) => {
     masterGain.gain.setTargetAtTime(currentMasterGain(), audioCtx.currentTime, 0.05);
   }
 });
-const MALLET_NORMS = [0.02, 0.10, 0.30, 0.50, 0.72, 0.92];
 document.getElementById('mallet-rack').addEventListener('click', (e) => {
   const btn = e.target.closest('.mallet-pick');
   if (!btn) return;
   const idx = parseInt(btn.dataset.mallet);
-  malletNorm = MALLET_NORMS[idx];
+  if (idx >= MALLETS.length) return;
+  malletIdx = idx;
+  malletNorm = mallet().norm;
   updateMalletDisplay();
-  recPushEvent({ type: 'control', key: 'mallet', value: malletNorm });
+  recPushEvent({ type: 'control', key: 'mallet', value: malletIdx });
   savePrefs();
 });
 
@@ -4452,7 +4623,7 @@ function savePrefs() {
   try {
     localStorage.setItem('fg_prefs', JSON.stringify({
       healingMode, currentHealingPage, currentHealingIdx,
-      currentPitchIdx, currentScalePage, flumieMode, malletNorm,
+      currentPitchIdx, currentScalePage, flumieMode, malletIdx,
     }));
     localStorage.setItem('healingMode', healingMode ? 'true' : 'false');
   } catch(e) {}
@@ -4468,7 +4639,8 @@ function savePrefs() {
     if (p.currentPitchIdx !== undefined) { currentPitchIdx = p.currentPitchIdx; pitchRatio = PITCH_RATIOS[currentPitchIdx]; appliedPitchIdx = currentPitchIdx; }
     if (p.currentScalePage !== undefined) { currentScalePage = p.currentScalePage; appliedScalePage = currentScalePage; }
     if (p.flumieMode !== undefined) flumieMode = p.flumieMode;
-    if (p.malletNorm !== undefined) malletNorm = p.malletNorm;
+    if (p.malletIdx !== undefined) { malletIdx = Math.min(p.malletIdx, MALLETS.length - 1); malletNorm = mallet().norm; }
+    else if (p.malletNorm !== undefined) { let best = 0; MALLETS.forEach((m, i) => { if (Math.abs(m.norm - p.malletNorm) < Math.abs(MALLETS[best].norm - p.malletNorm)) best = i; }); malletIdx = best; malletNorm = mallet().norm; }
     appliedHealingPage = currentHealingPage;
     appliedHealingIdx = currentHealingIdx;
   } catch(e) {}
@@ -4598,6 +4770,9 @@ function updateBlissDots() {
   });
 }
 
+// Mode switch crossfade: freeze the current bank (it rings out naturally over ~5s)
+// and prepare new-mode parameters for the next touch. No abrupt gain/pitch changes —
+// masterGain updates only when the user next strikes or rubs.
 function setHealingMode(enabled) {
   const wasExcited = modalBank && modalBank.resonators.some(r => r.energy > 1e-4);
   if (wasExcited) {
@@ -4608,7 +4783,14 @@ function setHealingMode(enabled) {
   }
   healingMode = enabled;
   pendingModeSwitch = true;
-  if (enabled) { currentHealingPage = 0; currentHealingIdx = 0; }
+  if (enabled) {
+    currentHealingPage = 0; currentHealingIdx = 0;
+  } else {
+    healingTarget = null;
+    pitchRatio = PITCH_RATIOS[currentPitchIdx];
+    sizeMorphFrom = null;
+    sizeMorphT = 1;
+  }
   document.body.setAttribute('data-healing', enabled ? 'true' : 'false');
   updateTuningToggle();
   updatePitchRackLabels();
@@ -4793,11 +4975,19 @@ const infoPanel = document.getElementById('info-panel');
 document.getElementById('info-toggle').addEventListener('click', () => {
   infoPanel.classList.add('open');
 });
-document.getElementById('info-close').addEventListener('click', () => {
-  infoPanel.classList.remove('open');
-});
 infoPanel.addEventListener('click', (e) => {
-  if (e.target === infoPanel) infoPanel.classList.remove('open');
+  if (!e.target.closest('a, button')) infoPanel.classList.remove('open');
+});
+
+// ============================================================
+// SUPPORT SHEET
+// ============================================================
+const supportSheet = document.getElementById('support-sheet');
+document.getElementById('support-toggle').addEventListener('click', () => {
+  supportSheet.classList.add('open');
+});
+supportSheet.addEventListener('click', (e) => {
+  if (e.target === supportSheet) supportSheet.classList.remove('open');
 });
 
 // ============================================================
@@ -5306,6 +5496,7 @@ let recSnapshot = null;
 let recPlayIdx = 0;
 let recPlayStartT = 0;
 let recLoopEnabled = false;
+let recDirty = false;
 let recPlayRubActive = false;
 let _recLastRubT = 0;
 
@@ -5323,7 +5514,7 @@ function recPushEvent(evt) {
 function recCaptureSnapshot() {
   return {
     currentShape, currentMaterial, gongSizeIdx, currentPitchIdx,
-    pitchRatio, malletNorm, sustainNorm, spaceNorm, volumeNorm, chladniMode,
+    pitchRatio, malletNorm, malletIdx, sustainNorm, spaceNorm, volumeNorm, chladniMode,
     healingMode, currentHealingIdx, currentHealingPage, currentScalePage, flumieMode,
   };
 }
@@ -5335,6 +5526,7 @@ function recBeginRecording() {
   recStartT = performance.now();
   _recLastRubT = 0;
   recSnapshot = recCaptureSnapshot();
+  recDirty = true;
   recState = 'recording';
   recUpdateUI();
 }
@@ -5343,6 +5535,7 @@ function recResumeRecording() {
   recCleanupPlayback();
   recStartT = performance.now() - recElapsed;
   _recLastRubT = recElapsed;
+  recDirty = true;
   recState = 'recording';
   recUpdateUI();
 }
@@ -5366,8 +5559,7 @@ function recSilenceGong() {
 }
 
 function recCleanupPlayback() {
-  if (recState !== 'playing') return;
-  if (recPlayRubActive) { rubActive = false; interactionMode = 'strike'; recPlayRubActive = false; }
+  if (recPlayRubActive) { rubActive = false; rubState.velocity = 0; interactionMode = 'strike'; recPlayRubActive = false; }
   if (dampenActive) { dampenActive = false; dampenBtn.classList.remove('pressing'); }
 }
 
@@ -5414,7 +5606,9 @@ function recRestoreSnapshot(snap) {
     retuneModalBank();
   }
   if (snap.flumieMode !== undefined && snap.flumieMode !== flumieMode) setFlumieMode(snap.flumieMode);
-  malletNorm = snap.malletNorm; updateMalletDisplay();
+  malletIdx = snap.malletIdx !== undefined ? snap.malletIdx : 2;
+  malletNorm = mallet().norm;
+  updateMalletDisplay();
   sustainNorm = snap.sustainNorm; sustainSlider.value = sustainNorm; updateSustainDisplay();
   spaceNorm = snap.spaceNorm; spaceSlider.value = spaceNorm; updateSpaceDisplay();
   volumeNorm = snap.volumeNorm; volumeSlider.value = volumeNorm; updateVolumeDisplay();
@@ -5509,7 +5703,9 @@ function recApplyControl(key, value) {
       break;
     }
     case 'mallet':
-      malletNorm = value; updateMalletDisplay();
+      malletIdx = typeof value === 'number' && value < MALLETS.length ? value : 2;
+      malletNorm = mallet().norm;
+      updateMalletDisplay();
       break;
     case 'flumieMode':
       if (value !== flumieMode) setFlumieMode(value);
@@ -5645,6 +5841,7 @@ function recStartPlayback() {
 function recStopPlayback() {
   if (recState !== 'playing') return;
   recCleanupPlayback();
+  recLoopEnabled = false;
   recState = recEvents.length > 0 ? 'paused' : 'idle';
   recUpdateUI();
 }
@@ -5652,6 +5849,8 @@ function recStopPlayback() {
 function recUpdateUI() {
   const recordBtn = document.getElementById('rec-record');
   const playBtn = document.getElementById('rec-play');
+  const saveBtn = document.getElementById('rec-save-btn');
+  const libBtn = document.getElementById('rec-library-btn');
   const clearBtn = document.getElementById('rec-clear');
   const hasRec = recEvents.length > 0;
 
@@ -5663,7 +5862,9 @@ function recUpdateUI() {
   playBtn.disabled = !hasRec && recState !== 'playing';
   playBtn.innerHTML = '&#9654;';
   playBtn.classList.toggle('active', recState === 'playing');
-  playBtn.classList.toggle('looping', recLoopEnabled);
+  playBtn.classList.toggle('looping', recState === 'playing' && recLoopEnabled);
+
+  saveBtn.disabled = !hasRec || !recDirty;
 
   clearBtn.disabled = !hasRec && recState !== 'recording';
 }
@@ -5681,21 +5882,28 @@ document.getElementById('rec-record').addEventListener('click', () => {
       recResumeRecording();
       break;
     case 'playing':
-      recCleanupPlayback();
+      recStopPlayback();
       recResumeRecording();
       break;
   }
 });
-// Play: cycles play → loop → play-to-end
+// Play: paused→play, playing→stop (single tap), double-tap while playing toggles loop
+let _recPlayLastTap = 0;
 document.getElementById('rec-play').addEventListener('click', () => {
+  const now = performance.now();
   switch (recState) {
     case 'paused':
       recLoopEnabled = false;
       recStartPlayback();
       break;
     case 'playing':
-      recLoopEnabled = !recLoopEnabled;
-      recUpdateUI();
+      if (now - _recPlayLastTap < 350) {
+        recLoopEnabled = !recLoopEnabled;
+        recUpdateUI();
+      } else {
+        recStopPlayback();
+      }
+      _recPlayLastTap = now;
       break;
     case 'recording':
       recLoopEnabled = false;
@@ -5705,14 +5913,120 @@ document.getElementById('rec-play').addEventListener('click', () => {
 });
 document.getElementById('rec-clear').addEventListener('click', () => {
   if (recState === 'recording') recPauseRecording();
-  if (recState === 'playing') { recCleanupPlayback(); }
+  if (recState === 'playing') recStopPlayback();
+  recCleanupPlayback();
   recEvents = [];
   recSnapshot = null;
   recElapsed = 0;
+  recLoopEnabled = false;
   recState = 'idle';
   recUpdateUI();
 });
 recUpdateUI();
+
+// ============================================================
+// RECORDING LIBRARY — save/load/delete via localStorage
+// ============================================================
+const REC_STORAGE_KEY = 'fingergong_recordings';
+
+function recGetSavedList() {
+  try {
+    return JSON.parse(localStorage.getItem(REC_STORAGE_KEY) || '[]');
+  } catch { return []; }
+}
+
+function recSaveCurrent() {
+  if (!recEvents.length || !recSnapshot) return;
+  if (recState === 'recording') recPauseRecording();
+  const saved = recGetSavedList();
+  const dur = recElapsed || (recEvents.length ? recEvents[recEvents.length - 1].t : 0);
+  const snap = recSnapshot;
+  const shape = snap.currentShape || 'chau';
+  const alloy = snap.currentMaterial || 'bronze';
+  const secs = Math.round(dur / 1000);
+  const name = shape.charAt(0).toUpperCase() + shape.slice(1) + ' · ' + alloy.charAt(0).toUpperCase() + alloy.slice(1) + ' · ' + secs + 's';
+  saved.push({
+    id: Date.now(),
+    name,
+    duration: dur,
+    events: recEvents.slice(),
+    snapshot: Object.assign({}, recSnapshot),
+    created: new Date().toISOString(),
+  });
+  try {
+    localStorage.setItem(REC_STORAGE_KEY, JSON.stringify(saved));
+  } catch {
+    showStoreToast('Storage full — delete a recording first');
+    return;
+  }
+  recDirty = false;
+  recLibraryRender();
+  recUpdateUI();
+}
+
+function recLoadSaved(id) {
+  const saved = recGetSavedList();
+  const rec = saved.find(r => r.id === id);
+  if (!rec) return;
+  if (recState === 'recording') recPauseRecording();
+  if (recState === 'playing') { recStopPlayback(); }
+  recEvents = rec.events.slice();
+  recSnapshot = Object.assign({}, rec.snapshot);
+  recElapsed = rec.duration;
+  recDirty = false;
+  recState = 'paused';
+  recUpdateUI();
+  document.getElementById('rec-library').classList.remove('open');
+}
+
+function recDeleteSaved(id) {
+  let saved = recGetSavedList();
+  saved = saved.filter(r => r.id !== id);
+  localStorage.setItem(REC_STORAGE_KEY, JSON.stringify(saved));
+  recLibraryRender();
+  recUpdateUI();
+}
+
+function recLibraryRender() {
+  const list = document.getElementById('rec-library-list');
+  const saved = recGetSavedList();
+  let html = '';
+  if (!saved.length && !recEvents.length) {
+    html = '<div class="rec-library-empty">No saved recordings yet</div>';
+  }
+  saved.forEach(r => {
+    const secs = Math.round((r.duration || 0) / 1000);
+    html += '<div class="rec-library-item" data-id="' + r.id + '">'
+      + '<div class="rec-library-item-info">'
+      + '<div class="rec-library-item-name">' + r.name + '</div>'
+      + '<div class="rec-library-item-meta">' + secs + 's · ' + (r.events ? r.events.length : 0) + ' events</div>'
+      + '</div>'
+      + '<button class="rec-library-item-del" data-del="' + r.id + '" title="Delete">✕</button>'
+      + '</div>';
+  });
+  list.innerHTML = html;
+}
+
+const recLibrary = document.getElementById('rec-library');
+document.getElementById('rec-save-btn').addEventListener('click', () => {
+  if (recState === 'playing') recStopPlayback();
+  if (recState === 'recording') recPauseRecording();
+  if (recEvents.length && recDirty) {
+    recSaveCurrent();
+  }
+});
+document.getElementById('rec-library-btn').addEventListener('click', () => {
+  if (recState === 'playing') recStopPlayback();
+  recLibraryRender();
+  recLibrary.classList.add('open');
+});
+recLibrary.addEventListener('click', (e) => {
+  const del = e.target.closest('[data-del]');
+  if (del) { recDeleteSaved(parseInt(del.dataset.del)); return; }
+  const item = e.target.closest('.rec-library-item');
+  if (item) { recLoadSaved(parseInt(item.dataset.id)); return; }
+  if (e.target === recLibrary) recLibrary.classList.remove('open');
+});
 
 // ============================================================
 // IN-APP PURCHASES — bridge to native StoreKit via WKWebView
@@ -5732,14 +6046,15 @@ function onThankiumUnlock(unlocked) {
   thankiumUnlocked = unlocked;
   const btn = document.getElementById('thankium-btn');
   if (btn) btn.classList.toggle('locked', !unlocked);
-  const buyBtn = document.getElementById('buy-thankium');
-  if (buyBtn && unlocked) {
-    buyBtn.querySelector('.support-label').textContent = '✦ Thankium unlocked';
-    buyBtn.querySelector('.support-desc').textContent = 'You carry the resonance of gratitude. Thank you.';
-    buyBtn.onclick = null;
-    buyBtn.style.opacity = '0.6';
-    buyBtn.style.cursor = 'default';
-  }
+  document.querySelectorAll('#buy-thankium, #sheet-buy-thankium').forEach(buyBtn => {
+    if (buyBtn && unlocked) {
+      buyBtn.querySelector('.support-label').textContent = '✦ Thankium unlocked';
+      buyBtn.querySelector('.support-desc').textContent = 'You carry the resonance of gratitude. Thank you.';
+      buyBtn.onclick = null;
+      buyBtn.style.opacity = '0.6';
+      buyBtn.style.cursor = 'default';
+    }
+  });
 }
 
 function onStoreResult(action, result) {
@@ -5756,6 +6071,7 @@ function onStoreResult(action, result) {
 
 let _toastTimer = null;
 function showStoreToast(html) {
+  supportSheet.classList.remove('open');
   let el = document.getElementById('store-toast');
   if (!el) {
     el = document.createElement('div');
