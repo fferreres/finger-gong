@@ -2173,9 +2173,7 @@ function rgbHex(c) {
 // ============================================================
 // AUDIO — MODAL SYNTHESIS
 // ============================================================
-// Create AudioContext at page load so resume() only needs to unlock it
-let audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'playback' });
-console.log('[AUDIO-DEBUG] ctx created, state:', audioCtx.state, 'standalone:', navigator.standalone);
+let audioCtx = null;
 let masterGain = null;
 let analyser = null;
 let timeData = null;
@@ -2187,9 +2185,16 @@ let reverbSend = null;
 let reverbWet = null;
 function currentMasterGain() { return volumeNorm * volumeNorm * 0.5 * sizeLerp('vol') * (healingMode ? 0.55 : 1); }
 
+function ensureAudioCtx() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'playback' });
+  audioCtx.onstatechange = () => {
+    if (audioCtx.state === 'running' && userHasInteracted) { buildModalBank(); ensureModalBankLive(); }
+  };
+}
 function initAudio() {
   if (masterGain) return;
-  console.log('[AUDIO-DEBUG] initAudio called', new Error().stack.split('\n').slice(1,4).join(' <- '));
+  ensureAudioCtx();
   masterGain = audioCtx.createGain();
   masterGain.gain.value = 0;
 
@@ -2283,12 +2288,13 @@ function initAudio() {
   analyser.connect(audioCtx.destination);
 }
 function resumeAudio() {
-  if (audioCtx.state === 'suspended') {
+  if (audioCtx && audioCtx.state === 'suspended') {
     audioCtx.resume();
   }
 }
 function unlockAudio() {
   userHasInteracted = true;
+  ensureAudioCtx();
   initAudio();
   if (audioCtx.state !== 'running') {
     audioCtx.resume();
@@ -2302,17 +2308,12 @@ function unlockAudio() {
   ensureModalBankLive();
 }
 let userHasInteracted = false;
-audioCtx.onstatechange = () => {
-  console.log('[AUDIO-DEBUG] onstatechange:', audioCtx.state, 'userInteracted:', userHasInteracted);
-  if (audioCtx.state === 'running' && userHasInteracted) { buildModalBank(); ensureModalBankLive(); }
-};
 document.addEventListener('touchstart', unlockAudio, true);
 document.addEventListener('touchend', unlockAudio, true);
 document.addEventListener('mousedown', unlockAudio, true);
 document.addEventListener('click', unlockAudio, true);
 document.addEventListener('visibilitychange', () => {
-  console.log('[AUDIO-DEBUG] visibilitychange hidden:', document.hidden, 'ctx state:', audioCtx.state);
-  if (!document.hidden) resumeAudio();
+  if (!document.hidden && audioCtx) resumeAudio();
 });
 
 let modalBank = null;
@@ -2372,7 +2373,6 @@ function cleanupFrozenBanks() {
 
 function buildModalBank() {
   if (modalBank) return;
-  console.log('[AUDIO-DEBUG] buildModalBank called', new Error().stack.split('\n').slice(1,4).join(' <- '));
   initAudio(); resumeAudio();
   const ctx = audioCtx;
   const fundamental = gongFundamental();
